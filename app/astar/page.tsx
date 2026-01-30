@@ -499,7 +499,7 @@ export default function AStarPage() {
     };
 
     return (
-        <div className={`h-screen flex flex-col overflow-hidden transition-colors duration-500 ${theme.bg}`}>
+        <div className={`min-h-screen lg:h-screen flex flex-col lg:overflow-hidden transition-colors duration-500 ${theme.bg}`}>
             {/* Alert */}
             <AnimatePresence>
                 {showAlert && (
@@ -520,28 +520,28 @@ export default function AStarPage() {
                 initial={{ y: -50, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
             >
-                <div className="px-6 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link href="/" className={`flex items-center gap-2 hover:opacity-80 ${theme.textMuted}`}>
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="px-4 lg:px-6 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2 lg:gap-4">
+                        <Link href="/" className={`flex items-center gap-1 lg:gap-2 hover:opacity-80 ${theme.textMuted}`}>
+                            <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                             </svg>
-                            <span className="font-medium">Back</span>
+                            <span className="font-medium text-sm lg:text-base">Back</span>
                         </Link>
                         <div className={`h-6 w-px ${isDarkMode ? 'bg-slate-700' : 'bg-slate-300'}`} />
-                        <h1 className="text-xl font-bold bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
+                        <h1 className="text-lg lg:text-xl font-bold bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent truncate">
                             A* Visualizer
                         </h1>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'bg-slate-800 text-yellow-400' : 'bg-slate-100 text-slate-600'}`}>
+                    <div className="flex items-center gap-2 lg:gap-3">
+                        <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-1.5 lg:p-2 rounded-lg transition-colors ${isDarkMode ? 'bg-slate-800 text-yellow-400' : 'bg-slate-100 text-slate-600'}`}>
                             {isDarkMode ? (
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                                <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                             ) : (
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                                <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
                             )}
                         </button>
-                        <button onClick={() => setShowTheory(true)} className="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold transition-all">
+                        <button onClick={() => setShowTheory(true)} className="px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs lg:text-sm font-semibold transition-all">
                             Theory
                         </button>
                     </div>
@@ -549,9 +549,9 @@ export default function AStarPage() {
             </motion.header>
 
             {/* Main Content */}
-            <div className="flex-1 flex gap-4 p-4 overflow-hidden">
+            <div className="flex-1 flex flex-col lg:flex-row gap-4 p-4 overflow-y-auto lg:overflow-hidden">
                 {/* Left Panel */}
-                <div className="w-72 flex flex-col gap-3">
+                <div className="w-full lg:w-72 flex flex-col gap-3 flex-shrink-0">
                     <div className={`rounded-xl p-4 border ${theme.panel}`}>
                         <h3 className={`text-xs font-bold mb-4 uppercase tracking-wider ${theme.textLabel}`}>Configuration</h3>
 
@@ -665,7 +665,7 @@ export default function AStarPage() {
                 </div>
 
                 {/* Center Panel */}
-                <div className="flex-1 flex flex-col gap-3">
+                <div className="flex-1 flex flex-col gap-3 min-h-[500px] lg:min-h-0">
                     <div className={`rounded-lg px-4 py-2.5 border ${astarState.isComplete ? (astarState.path.length > 0 ? (isDarkMode ? 'border-emerald-500/50 bg-emerald-500/10' : 'border-emerald-400 bg-emerald-50') : (isDarkMode ? 'border-red-500/50 bg-red-500/10' : 'border-red-400 bg-red-50')) : (isDarkMode ? 'border-amber-500/50 bg-amber-500/10' : 'border-amber-400 bg-amber-50')}`}>
                         <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
                             {astarState.stepMessage}
@@ -674,22 +674,22 @@ export default function AStarPage() {
 
                     <div className={`flex-1 rounded-xl border relative overflow-hidden ${isDarkMode ? 'bg-slate-900/60 border-slate-700' : 'bg-white border-slate-300'}`}>
 
-                        {/* Algorithm State - Top Left */}
-                        <div className={`absolute top-4 left-4 w-60 rounded-lg border z-10 ${isDarkMode ? 'bg-slate-900/95 border-slate-700' : 'bg-white/95 border-slate-300 shadow-lg'}`}>
-                            <div className={`px-3 py-2 border-b ${isDarkMode ? 'border-slate-700 bg-slate-800/50' : 'border-slate-200 bg-slate-50'}`}>
-                                <h4 className={`text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-amber-400' : 'text-amber-700'}`}>
+                        {/* Algorithm State - Overlay on Desktop, Stays on top of SVG */}
+                        <div className={`absolute top-2 left-2 lg:top-4 lg:left-4 w-[calc(100%-1rem)] lg:w-60 rounded-lg border z-10 transition-all ${isDarkMode ? 'bg-slate-900/95 border-slate-700' : 'bg-white/95 border-slate-300 shadow-lg'}`}>
+                            <div className={`px-3 py-1.5 lg:py-2 border-b ${isDarkMode ? 'border-slate-700 bg-slate-800/50' : 'border-slate-200 bg-slate-50'}`}>
+                                <h4 className={`text-[10px] lg:text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-amber-400' : 'text-amber-700'}`}>
                                     A* State
                                 </h4>
                             </div>
-                            <div className="p-3 space-y-3">
+                            <div className="p-2 lg:p-3 space-y-2 lg:space-y-3">
                                 <div className="flex items-center gap-2">
-                                    <span className={`text-xs font-medium ${theme.textLabel}`}>Current:</span>
-                                    <span className={`text-sm font-bold px-2 py-0.5 rounded ${astarState.current !== null ? 'bg-amber-500 text-white' : (isDarkMode ? 'bg-slate-700 text-slate-400' : 'bg-slate-200 text-slate-500')}`}>
+                                    <span className={`text-[10px] lg:text-xs font-medium ${theme.textLabel}`}>Current:</span>
+                                    <span className={`text-xs lg:text-sm font-bold px-2 py-0.5 rounded ${astarState.current !== null ? 'bg-amber-500 text-white' : (isDarkMode ? 'bg-slate-700 text-slate-400' : 'bg-slate-200 text-slate-500')}`}>
                                         {astarState.current !== null ? `${astarState.current} (f=${nodes[astarState.current]?.fCost.toFixed(1)})` : "-"}
                                     </span>
                                 </div>
 
-                                <div>
+                                <div className="hidden lg:block">
                                     <span className={`text-xs font-medium block mb-1 ${theme.textLabel}`}>
                                         Open Set (by f-cost):
                                     </span>
@@ -707,16 +707,16 @@ export default function AStarPage() {
                                 </div>
 
                                 <div>
-                                    <span className={`text-xs font-medium block mb-1 ${theme.textLabel}`}>Visit Order:</span>
-                                    <div className={`p-1.5 rounded border font-mono text-xs ${isDarkMode ? 'bg-slate-800 border-slate-700 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
+                                    <span className={`text-[10px] lg:text-xs font-medium block mb-0.5 lg:mb-1 ${theme.textLabel}`}>Visit Order:</span>
+                                    <div className={`p-1 lg:p-1.5 rounded border font-mono text-[9px] lg:text-xs ${isDarkMode ? 'bg-slate-800 border-slate-700 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
                                         {astarState.visitOrder.length > 0 ? astarState.visitOrder.join(" → ") : "-"}
                                     </div>
                                 </div>
 
                                 {astarState.path.length > 0 && (
                                     <div>
-                                        <span className={`text-xs font-medium block mb-1 ${theme.textLabel}`}>Path:</span>
-                                        <div className={`p-1.5 rounded border font-mono text-xs ${isDarkMode ? 'bg-emerald-900/50 border-emerald-700 text-emerald-300' : 'bg-emerald-100 border-emerald-300 text-emerald-700'}`}>
+                                        <span className={`text-[10px] lg:text-xs font-medium block mb-0.5 lg:mb-1 ${theme.textLabel}`}>Path:</span>
+                                        <div className={`p-1 lg:p-1.5 rounded border font-mono text-[9px] lg:text-xs ${isDarkMode ? 'bg-emerald-900/50 border-emerald-700 text-emerald-300' : 'bg-emerald-100 border-emerald-300 text-emerald-700'}`}>
                                             {astarState.path.join(" → ")}
                                         </div>
                                     </div>
@@ -725,83 +725,85 @@ export default function AStarPage() {
                         </div>
 
                         {/* Tree SVG */}
-                        <svg viewBox="0 0 700 350" className="w-full h-full">
-                            {nodes.map(node =>
-                                node.children.map(childId => {
-                                    const child = nodes.find(n => n.id === childId);
-                                    if (!child) return null;
-                                    const isActive = astarState.activeEdge?.from === node.id && astarState.activeEdge?.to === childId;
-                                    const isPath = astarState.path.includes(node.id) && astarState.path.includes(childId) && 
-                                                   Math.abs(astarState.path.indexOf(node.id) - astarState.path.indexOf(childId)) === 1;
-                                    const isVisited = astarState.closedSet.has(node.id) && astarState.closedSet.has(childId);
+                        <div className="w-full h-full flex items-center justify-center pt-24 lg:pt-0">
+                            <svg viewBox="0 0 700 350" className="w-full h-auto max-h-full">
+                                {nodes.map(node =>
+                                    node.children.map(childId => {
+                                        const child = nodes.find(n => n.id === childId);
+                                        if (!child) return null;
+                                        const isActive = astarState.activeEdge?.from === node.id && astarState.activeEdge?.to === childId;
+                                        const isPath = astarState.path.includes(node.id) && astarState.path.includes(childId) && 
+                                                    Math.abs(astarState.path.indexOf(node.id) - astarState.path.indexOf(childId)) === 1;
+                                        const isVisited = astarState.closedSet.has(node.id) && astarState.closedSet.has(childId);
 
-                                    return (
-                                        <line
-                                            key={`${node.id}-${childId}`}
-                                            x1={node.x} y1={node.y + 18}
-                                            x2={child.x} y2={child.y - 18}
-                                            className={
-                                                isPath ? "stroke-emerald-400" :
-                                                isActive ? "stroke-rose-500" :
-                                                    isVisited ? "stroke-orange-500" :
-                                                        isDarkMode ? "stroke-slate-600" : "stroke-slate-400"
-                                            }
-                                            strokeWidth={isPath ? 3 : isActive ? 2.5 : 1.5}
-                                            strokeLinecap="round"
-                                            markerEnd={graphType === "directed" ? "url(#arrowhead)" : undefined}
+                                        return (
+                                            <line
+                                                key={`${node.id}-${childId}`}
+                                                x1={node.x} y1={node.y + 18}
+                                                x2={child.x} y2={child.y - 18}
+                                                className={
+                                                    isPath ? "stroke-emerald-400" :
+                                                    isActive ? "stroke-rose-500" :
+                                                        isVisited ? "stroke-orange-500" :
+                                                            isDarkMode ? "stroke-slate-600" : "stroke-slate-400"
+                                                }
+                                                strokeWidth={isPath ? 3 : isActive ? 2.5 : 1.5}
+                                                strokeLinecap="round"
+                                                markerEnd={graphType === "directed" ? "url(#arrowhead)" : undefined}
+                                            />
+                                        );
+                                    })
+                                )}
+
+                                <defs>
+                                    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                                        <polygon points="0 0, 8 3, 0 6" className={isDarkMode ? "fill-slate-500" : "fill-slate-400"} />
+                                    </marker>
+                                </defs>
+
+                                {nodes.map(node => (
+                                    <g key={node.id}>
+                                        <motion.circle
+                                            cx={node.x} cy={node.y} r="18"
+                                            className={`${getNodeColor(node.id)} transition-colors duration-200`}
+                                            strokeWidth="2"
+                                            animate={{ scale: astarState.current === node.id ? 1.15 : 1 }}
+                                            transition={{ type: "spring", stiffness: 400, damping: 20 }}
                                         />
-                                    );
-                                })
-                            )}
+                                        <text
+                                            x={node.x} y={node.y}
+                                            textAnchor="middle" dominantBaseline="central"
+                                            className={`text-xs font-semibold pointer-events-none ${astarState.current === node.id || astarState.closedSet.has(node.id) || astarState.openSet.includes(node.id) || astarState.path.includes(node.id)
+                                                ? 'fill-white'
+                                                : isDarkMode ? 'fill-white' : 'fill-slate-700'
+                                                }`}
+                                        >
+                                            {node.label}
+                                        </text>
+                                        {/* f-cost badge */}
+                                        {node.fCost !== Infinity && (
+                                            <g>
+                                                <rect x={node.x + 12} y={node.y - 22} width="24" height="12" rx="3" className="fill-slate-800/80" />
+                                                <text x={node.x + 24} y={node.y - 16} textAnchor="middle" dominantBaseline="central" className="fill-amber-300 text-[7px] font-mono">
+                                                    f={node.fCost.toFixed(0)}
+                                                </text>
+                                            </g>
+                                        )}
+                                        {/* Visit order badge */}
+                                        {astarState.visitOrder.includes(node.id) && (
+                                            <motion.g initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500 }}>
+                                                <circle cx={node.x - 14} cy={node.y - 14} r="8" className="fill-orange-600" />
+                                                <text x={node.x - 14} y={node.y - 14} textAnchor="middle" dominantBaseline="central" className="fill-white text-[8px] font-bold">
+                                                    {astarState.visitOrder.indexOf(node.id) + 1}
+                                                </text>
+                                            </motion.g>
+                                        )}
+                                    </g>
+                                ))}
+                            </svg>
+                        </div>
 
-                            <defs>
-                                <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-                                    <polygon points="0 0, 8 3, 0 6" className={isDarkMode ? "fill-slate-500" : "fill-slate-400"} />
-                                </marker>
-                            </defs>
-
-                            {nodes.map(node => (
-                                <g key={node.id}>
-                                    <motion.circle
-                                        cx={node.x} cy={node.y} r="18"
-                                        className={`${getNodeColor(node.id)} transition-colors duration-200`}
-                                        strokeWidth="2"
-                                        animate={{ scale: astarState.current === node.id ? 1.15 : 1 }}
-                                        transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                                    />
-                                    <text
-                                        x={node.x} y={node.y}
-                                        textAnchor="middle" dominantBaseline="central"
-                                        className={`text-xs font-semibold pointer-events-none ${astarState.current === node.id || astarState.closedSet.has(node.id) || astarState.openSet.includes(node.id) || astarState.path.includes(node.id)
-                                            ? 'fill-white'
-                                            : isDarkMode ? 'fill-white' : 'fill-slate-700'
-                                            }`}
-                                    >
-                                        {node.label}
-                                    </text>
-                                    {/* f-cost badge */}
-                                    {node.fCost !== Infinity && (
-                                        <g>
-                                            <rect x={node.x + 12} y={node.y - 22} width="24" height="12" rx="3" className="fill-slate-800/80" />
-                                            <text x={node.x + 24} y={node.y - 16} textAnchor="middle" dominantBaseline="central" className="fill-amber-300 text-[7px] font-mono">
-                                                f={node.fCost.toFixed(0)}
-                                            </text>
-                                        </g>
-                                    )}
-                                    {/* Visit order badge */}
-                                    {astarState.visitOrder.includes(node.id) && (
-                                        <motion.g initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500 }}>
-                                            <circle cx={node.x - 14} cy={node.y - 14} r="8" className="fill-orange-600" />
-                                            <text x={node.x - 14} y={node.y - 14} textAnchor="middle" dominantBaseline="central" className="fill-white text-[8px] font-bold">
-                                                {astarState.visitOrder.indexOf(node.id) + 1}
-                                            </text>
-                                        </motion.g>
-                                    )}
-                                </g>
-                            ))}
-                        </svg>
-
-                        <div className={`absolute bottom-3 left-4 flex gap-4 text-xs rounded-lg px-3 py-2 border ${isDarkMode ? 'bg-slate-900/90 border-slate-700' : 'bg-white/90 border-slate-300'}`}>
+                        <div className={`absolute bottom-2 left-2 lg:bottom-3 lg:left-4 flex flex-wrap gap-2 lg:gap-4 text-[9px] lg:text-xs rounded-lg px-2 lg:px-3 py-1.5 lg:py-2 border z-10 ${isDarkMode ? 'bg-slate-900/90 border-slate-700' : 'bg-white/90 border-slate-300'}`}>
                             <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-400" /><span className={theme.textLabel}>Current</span></div>
                             <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-yellow-400" /><span className={theme.textLabel}>Open Set</span></div>
                             <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-orange-600" /><span className={theme.textLabel}>Closed Set</span></div>
@@ -812,12 +814,12 @@ export default function AStarPage() {
                 </div>
 
                 {/* Right Panel */}
-                <div className="w-72 flex flex-col">
+                <div className="w-full lg:w-72 flex flex-col flex-shrink-0">
                     <div className={`flex-1 rounded-xl p-4 border overflow-hidden flex flex-col ${theme.panel}`}>
                         <h3 className={`text-xs font-bold mb-3 uppercase tracking-wider ${theme.textLabel}`}>
                             A* Algorithm
                         </h3>
-                        <div className={`flex-1 overflow-y-auto rounded-lg p-3 font-mono text-[11px] leading-relaxed ${theme.codeBg} border`}>
+                        <div className={`flex-1 min-h-[300px] lg:min-h-0 overflow-y-auto rounded-lg p-3 font-mono text-[11px] leading-relaxed ${theme.codeBg} border`}>
                             {ASTAR_PSEUDOCODE.map((line, idx) => (
                                 <motion.div
                                     key={idx}
@@ -839,6 +841,7 @@ export default function AStarPage() {
                     </div>
                 </div>
             </div>
+
 
             {/* Build Graph Modal */}
             <AnimatePresence>
