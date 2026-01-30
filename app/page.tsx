@@ -91,7 +91,7 @@ const containerVariants = {
       delayChildren: 0.3,
     },
   },
-};
+} as const;
 
 const itemVariants = {
   hidden: { opacity: 0, y: 40, scale: 0.9 },
@@ -105,7 +105,7 @@ const itemVariants = {
       damping: 15,
     },
   },
-};
+} as const;
 
 const titleVariants = {
   hidden: { opacity: 0, y: -30 },
@@ -118,7 +118,7 @@ const titleVariants = {
       damping: 20,
     },
   },
-};
+} as const;
 
 export default function Home() {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
