@@ -524,7 +524,7 @@ export default function DijkstraPage() {
     };
 
     return (
-        <div className={`h-screen flex flex-col overflow-hidden transition-colors duration-500 ${theme.bg}`}>
+        <div className={`min-h-screen lg:h-screen flex flex-col lg:overflow-hidden transition-colors duration-500 ${theme.bg}`}>
             {/* Alert */}
             <AnimatePresence>
                 {showAlert && (
@@ -541,42 +541,41 @@ export default function DijkstraPage() {
 
             {/* Header */}
             <motion.header
-                className={`border-b backdrop-blur-sm z-50 flex-shrink-0 transition-colors duration-300 ${theme.header}`}
+                className={`border-b backdrop-blur-md z-50 flex-shrink-0 transition-colors duration-300 ${theme.header}`}
                 initial={{ y: -50, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
             >
-                <div className="px-6 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link href="/" className={`flex items-center gap-2 hover:opacity-80 transition-colors ${theme.textMuted}`}>
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="px-4 lg:px-6 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2 lg:gap-4">
+                        <Link href="/" className={`flex items-center gap-1 lg:gap-2 hover:opacity-80 transition-colors ${theme.textMuted}`}>
+                            <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                             </svg>
-                            <span>Back</span>
+                            <span className="text-sm lg:text-base">Back</span>
                         </Link>
                         <div className={`h-6 w-px ${theme.divider}`} />
-                        <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
-                            Dijkstra's Algorithm Visualizer
+                        <h1 className="text-lg lg:text-xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent truncate">
+                            Dijkstra's Algorithm
                         </h1>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 lg:gap-3">
                         <button
                             onClick={() => setIsDarkMode(!isDarkMode)}
-                            className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200'}`}
-                            title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                            className={`p-1.5 lg:p-2 rounded-lg transition-colors ${isDarkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200'}`}
                         >
                             {isDarkMode ? (
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                                 </svg>
                             ) : (
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                                 </svg>
                             )}
                         </button>
                         <button
                             onClick={() => setShowTheory(true)}
-                            className="flex items-center gap-2 px-5 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold shadow-lg transition-all"
+                            className="flex items-center gap-1 lg:gap-2 px-3 lg:px-5 py-1.5 lg:py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs lg:text-sm font-semibold shadow-lg transition-all"
                         >
                             About
                         </button>
@@ -585,9 +584,9 @@ export default function DijkstraPage() {
             </motion.header>
 
             {/* Main Content */}
-            <div className="flex-1 flex gap-3 p-3 overflow-hidden">
+            <div className="flex-1 flex flex-col lg:flex-row gap-3 p-3 overflow-y-auto lg:overflow-hidden">
                 {/* Left Panel - Controls Only */}
-                <div className="w-72 flex flex-col gap-2">
+                <div className="w-full lg:w-72 flex flex-col gap-2 flex-shrink-0">
                     {/* Number of Vertices */}
                     <div className={`backdrop-blur-sm rounded-lg p-2.5 border transition-colors ${theme.panel}`}>
                         <label className={`text-xs font-semibold mb-1 block ${theme.textLabel}`}>Number of Vertices</label>
@@ -605,55 +604,62 @@ export default function DijkstraPage() {
 
                     {/* Start & End Vertex */}
                     <div className={`backdrop-blur-sm rounded-lg p-2.5 border transition-colors ${theme.panel}`}>
-                        <label className={`text-xs font-semibold mb-1 block ${theme.textLabel}`}>Start Vertex</label>
-                        <select
-                            value={startNode}
-                            onChange={(e) => { setStartNode(parseInt(e.target.value)); reset(); }}
-                            disabled={dijkstraState.isRunning}
-                            className={`w-full px-2 py-1.5 rounded text-sm disabled:opacity-50 mb-2 transition-colors ${theme.input}`}
-                        >
-                            {nodes.map(node => (
-                                <option key={node.id} value={node.id} className={isDarkMode ? "bg-slate-800 text-white" : "bg-white text-slate-900"}>{node.label}</option>
-                            ))}
-                        </select>
-                        <label className={`text-xs font-semibold mb-1 block ${theme.textLabel}`}>End Vertex</label>
-                        <select
-                            value={endNode}
-                            onChange={(e) => setEndNode(parseInt(e.target.value))}
-                            disabled={dijkstraState.isRunning}
-                            className={`w-full px-2 py-1.5 rounded text-sm disabled:opacity-50 transition-colors ${theme.input}`}
-                        >
-                            {nodes.map(node => (
-                                <option key={node.id} value={node.id} className={isDarkMode ? "bg-slate-800 text-white" : "bg-white text-slate-900"}>{node.label}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* Graph Type */}
-                    <div className={`backdrop-blur-sm rounded-lg p-2.5 border transition-colors ${theme.panel}`}>
-                        <h3 className={`text-xs font-semibold mb-1.5 ${isDarkMode ? "text-white" : "text-slate-800"}`}>Graph Type</h3>
-                        <div className="space-y-1">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" checked={!isDirected} onChange={() => { setIsDirected(false); reset(); }} disabled={dijkstraState.isRunning} className="w-3.5 h-3.5 accent-teal-500" />
-                                <span className={`text-sm ${theme.textMuted}`}>Undirected</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" checked={isDirected} onChange={() => { setIsDirected(true); reset(); }} disabled={dijkstraState.isRunning} className="w-3.5 h-3.5 accent-teal-500" />
-                                <span className={`text-sm ${theme.textMuted}`}>Directed</span>
-                            </label>
+                        <div className="grid grid-cols-2 gap-2 lg:block lg:space-y-2">
+                            <div>
+                                <label className={`text-xs font-semibold mb-1 block ${theme.textLabel}`}>Start Vertex</label>
+                                <select
+                                    value={startNode}
+                                    onChange={(e) => { setStartNode(parseInt(e.target.value)); reset(); }}
+                                    disabled={dijkstraState.isRunning}
+                                    className={`w-full px-2 py-1.5 rounded text-sm disabled:opacity-50 transition-colors ${theme.input}`}
+                                >
+                                    {nodes.map(node => (
+                                        <option key={node.id} value={node.id} className={isDarkMode ? "bg-slate-800 text-white" : "bg-white text-slate-900"}>{node.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className={`text-xs font-semibold mb-1 block ${theme.textLabel}`}>End Vertex</label>
+                                <select
+                                    value={endNode}
+                                    onChange={(e) => setEndNode(parseInt(e.target.value))}
+                                    disabled={dijkstraState.isRunning}
+                                    className={`w-full px-2 py-1.5 rounded text-sm disabled:opacity-50 transition-colors ${theme.input}`}
+                                >
+                                    {nodes.map(node => (
+                                        <option key={node.id} value={node.id} className={isDarkMode ? "bg-slate-800 text-white" : "bg-white text-slate-900"}>{node.label}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Generate Graph */}
-                    <div className={`backdrop-blur-sm rounded-lg p-2.5 border transition-colors ${theme.panel}`}>
-                        <h3 className={`text-xs font-semibold mb-1.5 ${isDarkMode ? "text-white" : "text-slate-800"}`}>Generate Graph</h3>
-                        <div className="space-y-1">
-                            <button onClick={generateRandomGraph} disabled={dijkstraState.isRunning} className={`w-full px-2 py-1.5 rounded text-xs disabled:opacity-50 transition-colors border ${isDarkMode ? "bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border-purple-500/30" : "bg-slate-700 hover:bg-slate-800 text-white shadow-sm font-semibold"}`}>
-                                Random
-                            </button>
-                            <button onClick={openBuildGraph} disabled={dijkstraState.isRunning} className={`w-full px-2 py-1.5 rounded text-xs disabled:opacity-50 transition-colors border ${isDarkMode ? "bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border-indigo-500/30" : "bg-slate-700 hover:bg-slate-800 text-white shadow-sm font-semibold"}`}>
-                                Build Manually
-                            </button>
+                    {/* Graph Type & Generate */}
+                    <div className="grid grid-cols-2 gap-2 lg:block lg:space-y-2">
+                        <div className={`backdrop-blur-sm rounded-lg p-2.5 border transition-colors ${theme.panel}`}>
+                            <h3 className={`text-xs font-semibold mb-1.5 ${isDarkMode ? "text-white" : "text-slate-800"}`}>Graph Type</h3>
+                            <div className="flex lg:block items-center justify-around gap-2">
+                                <label className="flex items-center gap-1 cursor-pointer">
+                                    <input type="radio" checked={!isDirected} onChange={() => { setIsDirected(false); reset(); }} disabled={dijkstraState.isRunning} className="w-3 h-3 accent-teal-500" />
+                                    <span className={`text-[10px] ${theme.textMuted}`}>Undirected</span>
+                                </label>
+                                <label className="flex items-center gap-1 cursor-pointer">
+                                    <input type="radio" checked={isDirected} onChange={() => { setIsDirected(true); reset(); }} disabled={dijkstraState.isRunning} className="w-3 h-3 accent-teal-500" />
+                                    <span className={`text-[10px] ${theme.textMuted}`}>Directed</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className={`backdrop-blur-sm rounded-lg p-2.5 border transition-colors ${theme.panel}`}>
+                            <h3 className={`text-xs font-semibold mb-1.5 ${isDarkMode ? "text-white" : "text-slate-800"}`}>Graph Generator</h3>
+                            <div className="grid grid-cols-1 gap-1">
+                                <button onClick={generateRandomGraph} disabled={dijkstraState.isRunning} className={`px-2 py-1 rounded text-[10px] disabled:opacity-50 transition-colors border ${isDarkMode ? "bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border-purple-500/30" : "bg-slate-700 hover:bg-slate-800 text-white shadow-sm font-semibold"}`}>
+                                    Random
+                                </button>
+                                <button onClick={openBuildGraph} disabled={dijkstraState.isRunning} className={`px-2 py-1 rounded text-[10px] disabled:opacity-50 transition-colors border ${isDarkMode ? "bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border-indigo-500/30" : "bg-slate-700 hover:bg-slate-800 text-white shadow-sm font-semibold"}`}>
+                                    Manual
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -687,41 +693,29 @@ export default function DijkstraPage() {
                     {/* Speed Slider */}
                     <div className={`backdrop-blur-sm rounded-lg p-3 border transition-colors ${theme.panel}`}>
                         <div className="flex items-center justify-between mb-2">
-                            <label className={`text-xs font-bold uppercase tracking-wider ${theme.textLabel}`}>Animation Speed</label>
-                            <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${isDarkMode ? 'bg-teal-500/20 text-teal-400' : 'bg-teal-100 text-teal-700'}`}>
+                            <label className={`text-[10px] font-bold uppercase tracking-wider ${theme.textLabel}`}>Speed</label>
+                            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${isDarkMode ? 'bg-teal-500/20 text-teal-400' : 'bg-teal-100 text-teal-700'}`}>
                                 {speed}ms
                             </span>
                         </div>
-                        <div className="relative flex items-center gap-3">
-                            <span className={`text-[10px] font-bold ${theme.textMuted}`}>SLOW</span>
-                            <div className="relative flex-1 h-6 flex items-center">
-                                <input
-                                    type="range"
-                                    min="100"
-                                    max="2500"
-                                    step="50"
-                                    value={2600 - speed}
-                                    onChange={(e) => setSpeed(2600 - parseInt(e.target.value))}
-                                    className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-teal-500 bg-transparent z-10"
-                                    style={{
-                                        background: `linear-gradient(to right, #14b8a6 ${(2600 - speed - 100) / 2400 * 100}%, ${isDarkMode ? '#334155' : '#cbd5e1'} ${(2600 - speed - 100) / 2400 * 100}%)`
-                                    }}
-                                />
-                            </div>
-                            <span className={`text-[10px] font-bold ${theme.textMuted}`}>FAST</span>
-                        </div>
+                        <input
+                            type="range" min="100" max="2500" step="50"
+                            value={2600 - speed}
+                            onChange={(e) => setSpeed(2600 - parseInt(e.target.value))}
+                            className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-teal-500"
+                        />
                     </div>
                 </div>
 
                 {/* Center Panel - Graph with Algorithm State Overlay */}
-                <div className="flex-1 flex flex-col">
+                <div className="flex-1 flex flex-col min-h-[500px] lg:min-h-0">
                     {/* Step Message - More Prominent */}
                     <motion.div
-                        className="bg-gradient-to-r from-blue-900/80 to-teal-900/80 backdrop-blur-sm rounded-lg px-5 py-3 border-2 border-teal-500/50 mb-2 shadow-lg shadow-teal-500/20"
+                        className="bg-gradient-to-r from-blue-900/80 to-teal-900/80 backdrop-blur-sm rounded-lg px-4 py-2 border-2 border-teal-500/50 mb-2 shadow-lg shadow-teal-500/20"
                         animate={{ scale: dijkstraState.stepMessage.includes("PROCESSING") || dijkstraState.stepMessage.includes("DEQUEUED") ? [1, 1.01, 1] : 1 }}
                         transition={{ duration: 0.3 }}
                     >
-                        <p className="text-base font-bold text-white tracking-wide">{dijkstraState.stepMessage}</p>
+                        <p className="text-sm font-bold text-white tracking-wide">{dijkstraState.stepMessage}</p>
                     </motion.div>
 
                     {/* Shortest Path Results */}
@@ -730,31 +724,22 @@ export default function DijkstraPage() {
                             <motion.div
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className={`border-2 rounded-lg px-5 py-2 mb-2 shadow-lg ${isDarkMode ? "bg-emerald-500/20 border-emerald-500/50" : "bg-emerald-100 border-emerald-400"}`}
+                                className={`border-2 rounded-lg px-4 py-2 mb-2 shadow-lg ${isDarkMode ? "bg-emerald-500/20 border-emerald-500/50" : "bg-emerald-100 border-emerald-400"}`}
                             >
-                                <div className={`flex items-center justify-between ${isDarkMode ? "text-emerald-300" : "text-emerald-900"}`}>
+                                <div className={`flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between ${isDarkMode ? "text-emerald-300" : "text-emerald-900"}`}>
                                     <div className="flex items-center gap-2">
-                                        <span className="font-bold text-sm uppercase tracking-wider">Shortest Path Found:</span>
-                                        <span className={`font-mono text-xl px-3 py-1 rounded border ${isDarkMode ? "text-white bg-slate-800 border-emerald-500/30" : "text-emerald-900 bg-white border-emerald-300"}`}>
+                                        <span className="font-bold text-[10px] lg:text-sm uppercase tracking-wider">Path:</span>
+                                        <span className={`font-mono text-sm lg:text-base lg:px-3 lg:py-1 rounded border ${isDarkMode ? "text-white bg-slate-800 border-emerald-500/30" : "text-emerald-900 bg-white border-emerald-300"}`}>
                                             {dijkstraState.shortestPath.map(id => nodes.find(n => n.id === id)?.label).join(" → ")}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className="font-bold text-sm uppercase tracking-wider">Total Minimum Cost:</span>
-                                        <span className={`font-mono text-xl px-3 py-1 rounded border ${isDarkMode ? "text-white bg-slate-800 border-emerald-500/30" : "text-emerald-900 bg-white border-emerald-300"}`}>
+                                        <span className="font-bold text-[10px] lg:text-sm uppercase tracking-wider">Cost:</span>
+                                        <span className={`font-mono text-sm lg:text-base lg:px-3 lg:py-1 rounded border ${isDarkMode ? "text-white bg-slate-800 border-emerald-500/30" : "text-emerald-900 bg-white border-emerald-300"}`}>
                                             {dijkstraState.totalCost}
                                         </span>
                                     </div>
                                 </div>
-                            </motion.div>
-                        )}
-                        {dijkstraState.isComplete && dijkstraState.shortestPath.length === 0 && (
-                            <motion.div
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="bg-rose-500/20 border-2 border-rose-500/50 rounded-lg px-5 py-2 mb-2"
-                            >
-                                <p className="text-rose-300 font-bold">No path exists from start vertex to target vertex.</p>
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -762,172 +747,180 @@ export default function DijkstraPage() {
                     {/* Graph Container with Algorithm State Overlay */}
                     <div className={`flex-1 backdrop-blur-sm rounded-xl border relative overflow-hidden transition-colors ${theme.graphBg}`}>
                         {/* Algorithm State Overlay - Top Left */}
-                        <div className={`absolute top-3 left-3 z-10 w-64 backdrop-blur-sm rounded-lg border p-4 shadow-xl transition-colors ${theme.panel} ${isDarkMode ? "bg-slate-950/95" : "bg-white/95"}`}>
-                            <h3 className="text-sm font-bold text-teal-400 mb-3 border-b border-gray-500/20 pb-2">Algorithm State</h3>
+                        <div className={`absolute top-2 left-2 lg:top-3 lg:left-3 z-10 w-[calc(100%-1rem)] lg:w-64 backdrop-blur-sm rounded-lg border p-3 lg:p-4 shadow-xl transition-all ${theme.panel} ${isDarkMode ? "bg-slate-950/95" : "bg-white/95"}`}>
+                            <h3 className="text-[10px] lg:text-sm font-bold text-teal-400 mb-2 lg:mb-3 border-b border-gray-500/20 pb-1 lg:pb-2 uppercase tracking-wider">State</h3>
 
-                            <div className="mb-3">
-                                <span className={`text-xs font-bold ${isDarkMode ? "text-green-400" : "text-green-700"}`}>Visited Set: </span>
-                                <span className={`text-sm font-mono ${isDarkMode ? "text-green-300" : "text-green-800"}`}>
-                                    {'{' + Array.from(dijkstraState.visited).map(id => nodes.find(n => n.id === id)?.label).join(", ") + '}'}
-                                </span>
+                            <div className="grid grid-cols-2 gap-2 lg:block lg:space-y-3">
+                                <div>
+                                    <span className={`text-[10px] font-bold ${isDarkMode ? "text-green-400" : "text-green-700"}`}>Visited: </span>
+                                    <span className={`text-[10px] font-mono ${isDarkMode ? "text-green-300" : "text-green-800"}`}>
+                                        {'{' + Array.from(dijkstraState.visited).map(id => nodes.find(n => n.id === id)?.label).join(",") + '}'}
+                                    </span>
+                                </div>
+
+                                <div>
+                                    <span className={`text-[10px] font-bold ${isDarkMode ? "text-yellow-400" : "text-yellow-700"}`}>Current: </span>
+                                    <span className={`text-[10px] font-bold ${isDarkMode ? "text-yellow-300" : "text-yellow-700"}`}>
+                                        {dijkstraState.current !== null ? nodes.find(n => n.id === dijkstraState.current)?.label : "-"}
+                                    </span>
+                                </div>
                             </div>
 
-                            <div className="mb-3">
-                                <span className={`text-xs font-bold ${isDarkMode ? "text-yellow-400" : "text-yellow-700"}`}>Current Vertex: </span>
-                                <span className={`text-lg font-bold ${isDarkMode ? "text-yellow-300" : "text-yellow-700"}`}>
-                                    {dijkstraState.current !== null ? nodes.find(n => n.id === dijkstraState.current)?.label : "-"}
-                                </span>
-                            </div>
-
-                            <div className="mb-3">
-                                <span className={`text-xs font-bold ${isDarkMode ? "text-blue-400" : "text-blue-700"}`}>Priority Queue: </span>
+                            <div className="mt-2 hidden lg:block">
+                                <span className={`text-xs font-bold ${isDarkMode ? "text-blue-400" : "text-blue-700"}`}>PQ: </span>
                                 <span className={`text-xs font-mono ${isDarkMode ? "text-blue-300" : "text-blue-800"}`}>
-                                    [{[...dijkstraState.priorityQueue].sort((a, b) => a.distance - b.distance).slice(0, 4).map(item => `${nodes.find(n => n.id === item.node)?.label}:${item.distance}`).join(", ")}]
+                                    [{[...dijkstraState.priorityQueue].sort((a, b) => a.distance - b.distance).slice(0, 3).map(item => `${nodes.find(n => n.id === item.node)?.label}:${item.distance}`).join(", ")}]
                                 </span>
                             </div>
 
-                            {/* Distance Map */}
-                            <div className={`text-xs font-bold mb-2 ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>Distance Map:</div>
-                            <table className={`w-full text-sm border-2 ${isDarkMode ? "border-slate-600" : "border-slate-300 bg-white"}`}>
-                                <thead>
-                                    <tr className="bg-blue-600 text-white">
-                                        <th className={`border px-3 py-1.5 font-bold ${isDarkMode ? "border-slate-500" : "border-slate-300"}`}>Node</th>
-                                        <th className={`border px-3 py-1.5 font-bold ${isDarkMode ? "border-slate-500" : "border-slate-300"}`}>Dist</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {nodes.map(node => {
-                                        const distance = dijkstraState.distances.get(node.id);
-                                        const isVisited = dijkstraState.visited.has(node.id);
-                                        const isCurrent = dijkstraState.current === node.id;
-                                        return (
-                                            <tr key={node.id} className={`${isCurrent ? (isDarkMode ? 'bg-yellow-500/40 text-yellow-200' : 'bg-yellow-100 text-yellow-900') : isVisited ? (isDarkMode ? 'bg-green-500/25 text-green-300' : 'bg-green-100 text-green-900') : isDarkMode ? 'text-slate-300' : 'text-slate-800'}`}>
-                                                <td className={`border px-3 py-1 font-mono font-bold text-center text-base ${isDarkMode ? "border-slate-600" : "border-slate-300"}`}>{node.label}</td>
-                                                <td className={`border px-3 py-1 text-center font-mono text-base ${isDarkMode ? "border-slate-600" : "border-slate-300"}`}>
-                                                    {distance === undefined ? '-' : distance === Infinity ? 'INF' : distance}
-                                                </td>
+                            {/* Distance Map - Compact on Desktop, Hidden or very compact on Mobile */}
+                            <div className="mt-3 hidden lg:block">
+                                <div className={`text-[10px] font-bold mb-1 ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>Distances:</div>
+                                <div className="max-h-40 overflow-y-auto">
+                                    <table className={`w-full text-[10px] border ${isDarkMode ? "border-slate-600" : "border-slate-300 bg-white"}`}>
+                                        <thead>
+                                            <tr className="bg-blue-600 text-white">
+                                                <th className="border px-1 py-1 font-bold">Node</th>
+                                                <th className="border px-1 py-1 font-bold">Dist</th>
                                             </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
+                                        </thead>
+                                        <tbody>
+                                            {nodes.map(node => {
+                                                const distance = dijkstraState.distances.get(node.id);
+                                                const isVisited = dijkstraState.visited.has(node.id);
+                                                const isCurrent = dijkstraState.current === node.id;
+                                                return (
+                                                    <tr key={node.id} className={`${isCurrent ? (isDarkMode ? 'bg-yellow-500/40 text-yellow-200' : 'bg-yellow-100 text-yellow-900') : isVisited ? (isDarkMode ? 'bg-green-500/25 text-green-300' : 'bg-green-100 text-green-900') : isDarkMode ? 'text-slate-300' : 'text-slate-800'}`}>
+                                                        <td className="border px-2 py-0.5 font-mono font-bold text-center">{node.label}</td>
+                                                        <td className="border px-2 py-0.5 text-center font-mono">
+                                                            {distance === undefined ? '-' : distance === Infinity ? '∞' : distance}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Graph SVG */}
-                        <svg viewBox="0 0 700 440" className="w-full h-full">
-                            {/* Draw edges - For directed, only draw original edges (not duplicated) */}
-                            {edges.map((edge, idx) => {
-                                const fromNode = nodes.find(n => n.id === edge.from);
-                                const toNode = nodes.find(n => n.id === edge.to);
-                                if (!fromNode || !toNode) return null;
+                        <div className="w-full h-full flex items-center justify-center pt-20 lg:pt-0">
+                            <svg viewBox="0 0 700 440" className="w-full h-auto max-h-full">
+                                {/* Draw edges - For directed, only draw original edges (not duplicated) */}
+                                {edges.map((edge, idx) => {
+                                    const fromNode = nodes.find(n => n.id === edge.from);
+                                    const toNode = nodes.find(n => n.id === edge.to);
+                                    if (!fromNode || !toNode) return null;
 
-                                const dx = toNode.x - fromNode.x;
-                                const dy = toNode.y - fromNode.y;
-                                const length = Math.sqrt(dx * dx + dy * dy);
-                                const unitX = dx / length;
-                                const unitY = dy / length;
+                                    const dx = toNode.x - fromNode.x;
+                                    const dy = toNode.y - fromNode.y;
+                                    const length = Math.sqrt(dx * dx + dy * dy);
+                                    const unitX = dx / length;
+                                    const unitY = dy / length;
 
-                                // For directed: offset lines to show two parallel arrows
-                                const offset = isDirected ? 6 : 0;
-                                const perpX = -unitY * offset;
-                                const perpY = unitX * offset;
+                                    // For directed: offset lines to show two parallel arrows
+                                    const offset = isDirected ? 6 : 0;
+                                    const perpX = -unitY * offset;
+                                    const perpY = unitX * offset;
 
-                                // Forward edge (original direction)
-                                const x1f = fromNode.x + perpX + unitX * 28;
-                                const y1f = fromNode.y + perpY + unitY * 28;
-                                const x2f = toNode.x + perpX - unitX * 28;
-                                const y2f = toNode.y + perpY - unitY * 28;
+                                    // Forward edge (original direction)
+                                    const x1f = fromNode.x + perpX + unitX * 28;
+                                    const y1f = fromNode.y + perpY + unitY * 28;
+                                    const x2f = toNode.x + perpX - unitX * 28;
+                                    const y2f = toNode.y + perpY - unitY * 28;
 
-                                // Backward edge (reverse direction) - only for directed
-                                const x1b = toNode.x - perpX - unitX * 28;
-                                const y1b = toNode.y - perpY - unitY * 28;
-                                const x2b = fromNode.x - perpX + unitX * 28;
-                                const y2b = fromNode.y - perpY + unitY * 28;
+                                    // Backward edge (reverse direction) - only for directed
+                                    const x1b = toNode.x - perpX - unitX * 28;
+                                    const y1b = toNode.y - perpY - unitY * 28;
+                                    const x2b = fromNode.x - perpX + unitX * 28;
+                                    const y2b = fromNode.y - perpY + unitY * 28;
 
-                                // Weight label position - single label between the two lines
-                                const midX = (fromNode.x + toNode.x) / 2;
-                                const midY = (fromNode.y + toNode.y) / 2;
+                                    // Weight label position - single label between the two lines
+                                    const midX = (fromNode.x + toNode.x) / 2;
+                                    const midY = (fromNode.y + toNode.y) / 2;
 
-                                const isActiveForward = isActiveEdge(edge.from, edge.to);
-                                const isActiveBackward = isActiveEdge(edge.to, edge.from);
+                                    const isActiveForward = isActiveEdge(edge.from, edge.to);
+                                    const isActiveBackward = isActiveEdge(edge.to, edge.from);
 
-                                // Final path coloring
-                                // Final path coloring - Check BOTH directions for Undirected
-                                const isPathForward = dijkstraState.shortestPath.some((id, i) =>
-                                    (id === edge.from && dijkstraState.shortestPath[i + 1] === edge.to) ||
-                                    (!isDirected && id === edge.to && dijkstraState.shortestPath[i + 1] === edge.from)
-                                );
+                                    // Final path coloring
+                                    // Final path coloring - Check BOTH directions for Undirected
+                                    const isPathForward = dijkstraState.shortestPath.some((id, i) =>
+                                        (id === edge.from && dijkstraState.shortestPath[i + 1] === edge.to) ||
+                                        (!isDirected && id === edge.to && dijkstraState.shortestPath[i + 1] === edge.from)
+                                    );
 
-                                // Active edge coloring - Check BOTH directions for Undirected
-                                const isEdgeActive = isActiveForward || (!isDirected && isActiveBackward);
+                                    // Active edge coloring - Check BOTH directions for Undirected
+                                    const isEdgeActive = isActiveForward || (!isDirected && isActiveBackward);
 
-                                return (
-                                    <g key={`edge-${idx}`}>
-                                        {/* Forward direction */}
-                                        <line
-                                            x1={x1f} y1={y1f} x2={x2f} y2={y2f}
-                                            className={isPathForward ? "stroke-yellow-400 stroke-[5]" : isEdgeActive ? "stroke-red-500 stroke-[3]" : "stroke-slate-500 stroke-[2]"}
-                                            strokeOpacity={isPathForward || isEdgeActive ? 1 : 0.6}
-                                            markerEnd={isDirected ? `url(#arrow${isPathForward ? '-path' : isActiveForward ? '-active' : ''})` : undefined}
-                                        />
-
-                                        {/* Backward direction - only for directed */}
-                                        {isDirected && (
+                                    return (
+                                        <g key={`edge-${idx}`}>
+                                            {/* Forward direction */}
                                             <line
-                                                x1={x1b} y1={y1b} x2={x2b} y2={y2b}
-                                                className={isActiveBackward ? "stroke-red-500 stroke-[3]" : "stroke-slate-500 stroke-[2]"}
-                                                strokeOpacity={isActiveBackward ? 1 : 0.6}
-                                                markerEnd={`url(#arrow${isActiveBackward ? '-active' : ''})`}
+                                                x1={x1f} y1={y1f} x2={x2f} y2={y2f}
+                                                className={isPathForward ? "stroke-yellow-400 stroke-[5]" : isEdgeActive ? "stroke-red-500 stroke-[3]" : "stroke-slate-500 stroke-[2]"}
+                                                strokeOpacity={isPathForward || isEdgeActive ? 1 : 0.6}
+                                                markerEnd={isDirected ? `url(#arrow${isPathForward ? '-path' : isActiveForward ? '-active' : ''})` : undefined}
                                             />
-                                        )}
 
-                                        {/* Single weight label - positioned to avoid overlap */}
-                                        <circle cx={midX} cy={midY} r="12" className={`${isPathForward ? 'fill-yellow-400 stroke-yellow-200' : isDarkMode ? 'fill-slate-800 stroke-slate-600' : 'fill-white stroke-slate-300'}`} strokeWidth="1.5" />
-                                        <text x={midX} y={midY} textAnchor="middle" dominantBaseline="central" className={`text-xs font-bold ${isPathForward ? 'fill-slate-900' : isDarkMode ? 'fill-white' : 'fill-slate-900'}`}>{edge.weight}</text>
+                                            {/* Backward direction - only for directed */}
+                                            {isDirected && (
+                                                <line
+                                                    x1={x1b} y1={y1b} x2={x2b} y2={y2b}
+                                                    className={isActiveBackward ? "stroke-red-500 stroke-[3]" : "stroke-slate-500 stroke-[2]"}
+                                                    strokeOpacity={isActiveBackward ? 1 : 0.6}
+                                                    markerEnd={`url(#arrow${isActiveBackward ? '-active' : ''})`}
+                                                />
+                                            )}
+
+                                            {/* Single weight label - positioned to avoid overlap */}
+                                            <circle cx={midX} cy={midY} r="12" className={`${isPathForward ? 'fill-yellow-400 stroke-yellow-200' : isDarkMode ? 'fill-slate-800 stroke-slate-600' : 'fill-white stroke-slate-300'}`} strokeWidth="1.5" />
+                                            <text x={midX} y={midY} textAnchor="middle" dominantBaseline="central" className={`text-xs font-bold ${isPathForward ? 'fill-slate-900' : isDarkMode ? 'fill-white' : 'fill-slate-900'}`}>{edge.weight}</text>
+                                        </g>
+                                    );
+                                })}
+
+                                {/* Arrow markers */}
+                                <defs>
+                                    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                                        <path d="M0,0 L0,6 L7,3 z" className="fill-slate-500" />
+                                    </marker>
+                                    <marker id="arrow-active" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                                        <path d="M0,0 L0,6 L7,3 z" className="fill-red-500" />
+                                    </marker>
+                                    <marker id="arrow-path" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                                        <path d="M0,0 L0,6 L7,3 z" className="fill-yellow-400" />
+                                    </marker>
+                                </defs>
+
+                                {/* Draw nodes */}
+                                {nodes.map(node => (
+                                    <g key={node.id}>
+                                        <motion.circle
+                                            cx={node.x}
+                                            cy={node.y}
+                                            r="26"
+                                            className={getNodeColor(node.id)}
+                                            strokeWidth="3"
+                                            animate={{ scale: dijkstraState.current === node.id ? 1.15 : 1 }}
+                                            transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                                        />
+                                        <text x={node.x} y={node.y} textAnchor="middle" dominantBaseline="central" className={`text-base font-bold pointer-events-none ${isDarkMode ? 'fill-white' : 'fill-slate-900'}`}>{node.label}</text>
                                     </g>
-                                );
-                            })}
-
-                            {/* Arrow markers */}
-                            <defs>
-                                <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-                                    <path d="M0,0 L0,6 L7,3 z" className="fill-slate-500" />
-                                </marker>
-                                <marker id="arrow-active" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-                                    <path d="M0,0 L0,6 L7,3 z" className="fill-red-500" />
-                                </marker>
-                                <marker id="arrow-path" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-                                    <path d="M0,0 L0,6 L7,3 z" className="fill-yellow-400" />
-                                </marker>
-                            </defs>
-
-                            {/* Draw nodes */}
-                            {nodes.map(node => (
-                                <g key={node.id}>
-                                    <motion.circle
-                                        cx={node.x}
-                                        cy={node.y}
-                                        r="26"
-                                        className={getNodeColor(node.id)}
-                                        strokeWidth="3"
-                                        animate={{ scale: dijkstraState.current === node.id ? 1.15 : 1 }}
-                                        transition={{ type: "spring", stiffness: 300, damping: 15 }}
-                                    />
-                                    <text x={node.x} y={node.y} textAnchor="middle" dominantBaseline="central" className={`text-base font-bold pointer-events-none ${isDarkMode ? 'fill-white' : 'fill-slate-900'}`}>{node.label}</text>
-                                </g>
-                            ))}
-                        </svg>
+                                ))}
+                            </svg>
+                        </div>
 
                         {/* Legend - Bottom */}
-                        <div className={`absolute bottom-2 left-2 right-2 flex flex-wrap gap-3 text-xs rounded-lg px-3 py-2 border transition-colors ${theme.panel} ${isDarkMode ? "bg-slate-950/80" : "bg-white/90"}`}>
-                            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-emerald-500" /><span className={theme.textMuted}>Start</span></div>
-                            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-rose-500" /><span className={theme.textMuted}>End</span></div>
-                            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-yellow-400" /><span className={theme.textMuted}>Current</span></div>
-                            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-blue-400" /><span className={theme.textMuted}>Queue</span></div>
-                            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-green-500" /><span className={theme.textMuted}>Visited</span></div>
+                        <div className={`absolute bottom-2 left-2 right-2 flex flex-wrap gap-2 lg:gap-3 text-[9px] lg:text-xs rounded-lg px-2 lg:px-3 py-1.5 lg:py-2 border transition-colors ${theme.panel} ${isDarkMode ? "bg-slate-950/80" : "bg-white/90"} z-10`}>
+                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500" /><span className={theme.textMuted}>Start</span></div>
+                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-rose-500" /><span className={theme.textMuted}>End</span></div>
+                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-yellow-400" /><span className={theme.textMuted}>Current</span></div>
+                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-blue-400" /><span className={theme.textMuted}>Queue</span></div>
+                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-green-500" /><span className={theme.textMuted}>Visited</span></div>
                             <div className="flex items-center gap-1"><div className="w-3 h-0.5 bg-red-500" /><span className={theme.textMuted}>Active</span></div>
                             <div className="flex items-center gap-1"><div className="w-3 h-0.5 bg-yellow-400" /><span className={theme.textMuted}>Path</span></div>
-                            <div className="ml-auto px-2 py-0.5 rounded bg-teal-500/20 border border-teal-500/30">
+                            <div className="hidden lg:flex ml-auto px-2 py-0.5 rounded bg-teal-500/20 border border-teal-500/30">
                                 <span className="font-semibold text-teal-400">{isDirected ? "Directed ↔" : "Undirected"}</span>
                             </div>
                         </div>
@@ -935,7 +928,7 @@ export default function DijkstraPage() {
                 </div>
 
                 {/* Right Panel - Pseudocode (wider with bigger font) */}
-                <div className="w-96 flex flex-col">
+                <div className="w-full lg:w-96 flex flex-col flex-shrink-0">
                     <div className={`backdrop-blur-sm rounded-xl p-4 border flex-1 overflow-y-auto ${theme.panel}`}>
                         <h3 className={`text-sm font-bold mb-3 flex items-center gap-2 ${isDarkMode ? "text-white" : "text-slate-800"}`}>
                             <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
