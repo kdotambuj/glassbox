@@ -492,7 +492,7 @@ export default function BFSPage() {
     }, [bfsState.current, bfsState.visited, bfsState.queue, isDarkMode]);
 
     return (
-        <div className={`h-screen flex flex-col overflow-hidden transition-colors duration-500 ${theme.bg}`}>
+        <div className={`min-h-screen lg:h-screen flex flex-col lg:overflow-hidden transition-colors duration-500 ${theme.bg}`}>
             {/* Alert */}
             <AnimatePresence>
                 {showAlert && (
@@ -513,28 +513,28 @@ export default function BFSPage() {
                 initial={{ y: -50, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
             >
-                <div className="px-6 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link href="/" className={`flex items-center gap-2 hover:opacity-80 ${theme.textMuted}`}>
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="px-4 lg:px-6 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2 lg:gap-4">
+                        <Link href="/" className={`flex items-center gap-1 lg:gap-2 hover:opacity-80 ${theme.textMuted}`}>
+                            <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                             </svg>
-                            <span className="font-medium">Back</span>
+                            <span className="font-medium text-sm lg:text-base">Back</span>
                         </Link>
                         <div className={`h-6 w-px ${isDarkMode ? 'bg-slate-700' : 'bg-slate-300'}`} />
-                        <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                        <h1 className="text-lg lg:text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent truncate">
                             BFS Visualizer
                         </h1>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'bg-slate-800 text-yellow-400' : 'bg-slate-100 text-slate-600'}`}>
+                    <div className="flex items-center gap-2 lg:gap-3">
+                        <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-1.5 lg:p-2 rounded-lg transition-colors ${isDarkMode ? 'bg-slate-800 text-yellow-400' : 'bg-slate-100 text-slate-600'}`}>
                             {isDarkMode ? (
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                                <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                             ) : (
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                                <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
                             )}
                         </button>
-                        <button onClick={() => setShowTheory(true)} className="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-semibold transition-all">
+                        <button onClick={() => setShowTheory(true)} className="px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white text-xs lg:text-sm font-semibold transition-all">
                             Theory
                         </button>
                     </div>
@@ -542,9 +542,9 @@ export default function BFSPage() {
             </motion.header>
 
             {/* Main Content */}
-            <div className="flex-1 flex gap-4 p-4 overflow-hidden">
+            <div className="flex-1 flex flex-col lg:flex-row gap-4 p-4 overflow-y-auto lg:overflow-hidden">
                 {/* Left Panel */}
-                <div className="w-72 flex flex-col gap-3">
+                <div className="w-full lg:w-72 flex flex-col gap-3 flex-shrink-0">
                     <div className={`rounded-xl p-4 border ${theme.panel}`}>
                         <h3 className={`text-xs font-bold mb-4 uppercase tracking-wider ${theme.textLabel}`}>Configuration</h3>
 
@@ -652,17 +652,17 @@ export default function BFSPage() {
                     {/* Level indicator */}
                     <div className={`rounded-xl p-4 border ${theme.panel}`}>
                         <h3 className={`text-xs font-bold mb-2 uppercase tracking-wider ${theme.textLabel}`}>Current Level</h3>
-                        <div className={`text-3xl font-bold text-center py-2 ${isDarkMode ? 'text-cyan-400' : 'text-cyan-600'}`}>
+                        <div className={`text-2xl lg:text-3xl font-bold text-center py-2 ${isDarkMode ? 'text-cyan-400' : 'text-cyan-600'}`}>
                             {bfsState.visitOrder.length > 0 ? bfsState.currentLevel : "-"}
                         </div>
-                        <p className={`text-xs text-center ${theme.textMuted}`}>
+                        <p className={`text-[10px] text-center ${theme.textMuted}`}>
                             BFS explores level by level
                         </p>
                     </div>
                 </div>
 
                 {/* Center Panel */}
-                <div className="flex-1 flex flex-col gap-3">
+                <div className="flex-1 flex flex-col gap-3 min-h-[500px] lg:min-h-0">
                     <div className={`rounded-lg px-4 py-2.5 border ${bfsState.isComplete ? (isDarkMode ? 'border-emerald-500/50 bg-emerald-500/10' : 'border-emerald-400 bg-emerald-50') : (isDarkMode ? 'border-cyan-500/50 bg-cyan-500/10' : 'border-cyan-400 bg-cyan-50')}`}>
                         <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
                             {bfsState.stepMessage}
@@ -671,22 +671,22 @@ export default function BFSPage() {
 
                     <div className={`flex-1 rounded-xl border relative overflow-hidden ${isDarkMode ? 'bg-slate-900/60 border-slate-700' : 'bg-white border-slate-300'}`}>
 
-                        {/* Algorithm State - Top Left */}
-                        <div className={`absolute top-4 left-4 w-64 rounded-lg border z-10 ${isDarkMode ? 'bg-slate-900/95 border-slate-700' : 'bg-white/95 border-slate-300 shadow-lg'}`}>
-                            <div className={`px-3 py-2 border-b ${isDarkMode ? 'border-slate-700 bg-slate-800/50' : 'border-slate-200 bg-slate-50'}`}>
-                                <h4 className={`text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
+                        {/* Algorithm State - Overlay on Desktop, Stays on top of SVG */}
+                        <div className={`absolute top-2 left-2 lg:top-4 lg:left-4 w-[calc(100%-1rem)] lg:w-64 rounded-lg border z-10 transition-all ${isDarkMode ? 'bg-slate-900/95 border-slate-700' : 'bg-white/95 border-slate-300 shadow-lg'}`}>
+                            <div className={`px-3 py-1.5 lg:py-2 border-b ${isDarkMode ? 'border-slate-700 bg-slate-800/50' : 'border-slate-200 bg-slate-50'}`}>
+                                <h4 className={`text-[10px] lg:text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
                                     Queue State (FIFO)
                                 </h4>
                             </div>
-                            <div className="p-3 space-y-3">
+                            <div className="p-2 lg:p-3 space-y-2 lg:space-y-3">
                                 <div className="flex items-center gap-2">
-                                    <span className={`text-xs font-medium ${theme.textLabel}`}>Current:</span>
-                                    <span className={`text-sm font-bold px-2 py-0.5 rounded ${bfsState.current !== null ? 'bg-amber-500 text-white' : (isDarkMode ? 'bg-slate-700 text-slate-400' : 'bg-slate-200 text-slate-500')}`}>
+                                    <span className={`text-[10px] lg:text-xs font-medium ${theme.textLabel}`}>Current:</span>
+                                    <span className={`text-xs lg:text-sm font-bold px-2 py-0.5 rounded ${bfsState.current !== null ? 'bg-amber-500 text-white' : (isDarkMode ? 'bg-slate-700 text-slate-400' : 'bg-slate-200 text-slate-500')}`}>
                                         {bfsState.current !== null ? bfsState.current : "-"}
                                     </span>
                                 </div>
 
-                                <div>
+                                <div className="hidden lg:block">
                                     <div className="flex items-center justify-between mb-1">
                                         <span className={`text-xs font-medium ${theme.textLabel}`}>Queue:</span>
                                         <span className={`text-[10px] ${theme.textMuted}`}>Front → Back</span>
@@ -708,8 +708,8 @@ export default function BFSPage() {
                                 </div>
 
                                 <div>
-                                    <span className={`text-xs font-medium block mb-1 ${theme.textLabel}`}>Visit Order:</span>
-                                    <div className={`p-1.5 rounded border font-mono text-xs min-h-[24px] ${isDarkMode ? 'bg-slate-800 border-slate-700 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
+                                    <span className={`text-[10px] lg:text-xs font-medium block mb-0.5 lg:mb-1 ${theme.textLabel}`}>Visit Order:</span>
+                                    <div className={`p-1 lg:p-1.5 rounded border font-mono text-[9px] lg:text-xs min-h-[24px] ${isDarkMode ? 'bg-slate-800 border-slate-700 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
                                         {bfsState.visitOrder.length > 0 ? bfsState.visitOrder.join(" → ") : "-"}
                                     </div>
                                 </div>
@@ -717,84 +717,86 @@ export default function BFSPage() {
                         </div>
 
                         {/* Tree SVG */}
-                        <svg viewBox="0 0 700 350" className="w-full h-full">
-                            {/* Edges */}
-                            {nodes.map(node =>
-                                node.children.map(childId => {
-                                    const child = nodes.find(n => n.id === childId);
-                                    if (!child) return null;
-                                    const isActive = bfsState.activeEdge?.from === node.id && bfsState.activeEdge?.to === childId;
-                                    const isVisited = bfsState.visited.has(node.id) && bfsState.visited.has(childId);
+                        <div className="w-full h-full flex items-center justify-center pt-20 lg:pt-0">
+                            <svg viewBox="0 0 700 350" className="w-full h-auto max-h-full">
+                                {/* Edges */}
+                                {nodes.map(node =>
+                                    node.children.map(childId => {
+                                        const child = nodes.find(n => n.id === childId);
+                                        if (!child) return null;
+                                        const isActive = bfsState.activeEdge?.from === node.id && bfsState.activeEdge?.to === childId;
+                                        const isVisited = bfsState.visited.has(node.id) && bfsState.visited.has(childId);
 
-                                    return (
-                                        <line
-                                            key={`${node.id}-${childId}`}
-                                            x1={node.x} y1={node.y + 18}
-                                            x2={child.x} y2={child.y - 18}
-                                            className={
-                                                isActive ? "stroke-rose-500" :
-                                                    isVisited ? "stroke-emerald-500" :
-                                                        isDarkMode ? "stroke-slate-600" : "stroke-slate-400"
-                                            }
-                                            strokeWidth={isActive ? 2.5 : 1.5}
-                                            strokeLinecap="round"
-                                            markerEnd={graphType === "directed" ? "url(#arrowhead)" : undefined}
+                                        return (
+                                            <line
+                                                key={`${node.id}-${childId}`}
+                                                x1={node.x} y1={node.y + 18}
+                                                x2={child.x} y2={child.y - 18}
+                                                className={
+                                                    isActive ? "stroke-rose-500" :
+                                                        isVisited ? "stroke-emerald-500" :
+                                                            isDarkMode ? "stroke-slate-600" : "stroke-slate-400"
+                                                }
+                                                strokeWidth={isActive ? 2.5 : 1.5}
+                                                strokeLinecap="round"
+                                                markerEnd={graphType === "directed" ? "url(#arrowhead)" : undefined}
+                                            />
+                                        );
+                                    })
+                                )}
+
+                                <defs>
+                                    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                                        <polygon points="0 0, 8 3, 0 6" className={isDarkMode ? "fill-slate-500" : "fill-slate-400"} />
+                                    </marker>
+                                </defs>
+
+                                {/* Nodes */}
+                                {nodes.map(node => (
+                                    <g key={node.id}>
+                                        <motion.circle
+                                            cx={node.x} cy={node.y} r="18"
+                                            className={`${getNodeColor(node.id)} transition-colors duration-200`}
+                                            strokeWidth="2"
+                                            animate={{ scale: bfsState.current === node.id ? 1.15 : 1 }}
+                                            transition={{ type: "spring", stiffness: 400, damping: 20 }}
                                         />
-                                    );
-                                })
-                            )}
-
-                            <defs>
-                                <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-                                    <polygon points="0 0, 8 3, 0 6" className={isDarkMode ? "fill-slate-500" : "fill-slate-400"} />
-                                </marker>
-                            </defs>
-
-                            {/* Nodes */}
-                            {nodes.map(node => (
-                                <g key={node.id}>
-                                    <motion.circle
-                                        cx={node.x} cy={node.y} r="18"
-                                        className={`${getNodeColor(node.id)} transition-colors duration-200`}
-                                        strokeWidth="2"
-                                        animate={{ scale: bfsState.current === node.id ? 1.15 : 1 }}
-                                        transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                                    />
-                                    <text
-                                        x={node.x} y={node.y}
-                                        textAnchor="middle" dominantBaseline="central"
-                                        className={`text-xs font-semibold pointer-events-none ${bfsState.current === node.id || bfsState.visited.has(node.id) || bfsState.queue.includes(node.id)
-                                            ? 'fill-white'
-                                            : isDarkMode ? 'fill-white' : 'fill-slate-700'
-                                            }`}
-                                    >
-                                        {node.label}
-                                    </text>
-                                    {/* Visit order badge */}
-                                    {bfsState.visited.has(node.id) && (
-                                        <motion.g initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500 }}>
-                                            <circle cx={node.x + 14} cy={node.y - 14} r="8" className="fill-emerald-600" />
-                                            <text x={node.x + 14} y={node.y - 14} textAnchor="middle" dominantBaseline="central" className="fill-white text-[8px] font-bold">
-                                                {bfsState.visitOrder.indexOf(node.id) + 1}
-                                            </text>
-                                        </motion.g>
-                                    )}
-                                    {/* Level indicator */}
-                                    {nodeLevels.has(node.id) && (
                                         <text
-                                            x={node.x - 14} y={node.y - 14}
+                                            x={node.x} y={node.y}
                                             textAnchor="middle" dominantBaseline="central"
-                                            className={`text-[8px] font-medium ${isDarkMode ? 'fill-slate-500' : 'fill-slate-400'}`}
+                                            className={`text-xs font-semibold pointer-events-none ${bfsState.current === node.id || bfsState.visited.has(node.id) || bfsState.queue.includes(node.id)
+                                                ? 'fill-white'
+                                                : isDarkMode ? 'fill-white' : 'fill-slate-700'
+                                                }`}
                                         >
-                                            L{nodeLevels.get(node.id)}
+                                            {node.label}
                                         </text>
-                                    )}
-                                </g>
-                            ))}
-                        </svg>
+                                        {/* Visit order badge */}
+                                        {bfsState.visited.has(node.id) && (
+                                            <motion.g initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500 }}>
+                                                <circle cx={node.x + 14} cy={node.y - 14} r="8" className="fill-emerald-600" />
+                                                <text x={node.x + 14} y={node.y - 14} textAnchor="middle" dominantBaseline="central" className="fill-white text-[8px] font-bold">
+                                                    {bfsState.visitOrder.indexOf(node.id) + 1}
+                                                </text>
+                                            </motion.g>
+                                        )}
+                                        {/* Level indicator */}
+                                        {nodeLevels.has(node.id) && (
+                                            <text
+                                                x={node.x - 14} y={node.y - 14}
+                                                textAnchor="middle" dominantBaseline="central"
+                                                className={`text-[8px] font-medium ${isDarkMode ? 'fill-slate-500' : 'fill-slate-400'}`}
+                                            >
+                                                L{nodeLevels.get(node.id)}
+                                            </text>
+                                        )}
+                                    </g>
+                                ))}
+                            </svg>
+                        </div>
 
                         {/* Legend */}
-                        <div className={`absolute bottom-3 left-4 flex gap-4 text-xs rounded-lg px-3 py-2 border ${isDarkMode ? 'bg-slate-900/90 border-slate-700' : 'bg-white/90 border-slate-300'}`}>
+                        <div className={`absolute bottom-2 left-2 lg:bottom-3 lg:left-4 flex flex-wrap gap-2 lg:gap-4 text-[9px] lg:text-xs rounded-lg px-2 lg:px-3 py-1.5 lg:py-2 border z-10 ${isDarkMode ? 'bg-slate-900/90 border-slate-700' : 'bg-white/90 border-slate-300'}`}>
                             <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-400" /><span className={theme.textLabel}>Current</span></div>
                             <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-cyan-500" /><span className={theme.textLabel}>In Queue</span></div>
                             <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500" /><span className={theme.textLabel}>Visited</span></div>
@@ -803,12 +805,12 @@ export default function BFSPage() {
                 </div>
 
                 {/* Right Panel */}
-                <div className="w-72 flex flex-col">
+                <div className="w-full lg:w-72 flex flex-col flex-shrink-0">
                     <div className={`flex-1 rounded-xl p-4 border overflow-hidden flex flex-col ${theme.panel}`}>
                         <h3 className={`text-xs font-bold mb-3 uppercase tracking-wider ${theme.textLabel}`}>
                             BFS Algorithm
                         </h3>
-                        <div className={`flex-1 overflow-y-auto rounded-lg p-3 font-mono text-[11px] leading-relaxed ${theme.codeBg} border`}>
+                        <div className={`flex-1 min-h-[300px] lg:min-h-0 overflow-y-auto rounded-lg p-3 font-mono text-[11px] leading-relaxed ${theme.codeBg} border`}>
                             {BFS_PSEUDOCODE.map((line, idx) => (
                                 <motion.div
                                     key={idx}
