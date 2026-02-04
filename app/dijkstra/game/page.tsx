@@ -705,7 +705,7 @@ function GraphVisualization({
                             <stop offset="100%" stopColor={isDark ? "#0f172a" : "#dcfce7"} />
                         </linearGradient>
                     </defs>
-                    <rect width="100%" height="100%" fill="url(#grid)" x={-svgWidth * 2} y={-svgHeight * 2} width={svgWidth * 5} height={svgHeight * 5} />
+                    <rect fill="url(#grid)" x={-svgWidth * 2} y={-svgHeight * 2} width={svgWidth * 5} height={svgHeight * 5} />
 
                     {/* Loading state for Level 3 */}
                     {level === 3 && isMapLoading && (
