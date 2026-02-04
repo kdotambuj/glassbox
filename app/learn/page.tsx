@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import * as d3 from "d3";
+import { motion, AnimatePresence } from "framer-motion";
 
 // SVG Icons
 const Icons = {
@@ -49,6 +50,16 @@ const Icons = {
     book: (
         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+    ),
+    sun: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M16.95 16.95l.707.707M7.05 7.05l.707.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
+        </svg>
+    ),
+    moon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
         </svg>
     ),
     trophy: (
@@ -399,7 +410,53 @@ interface GraphVisualizationProps {
     gameStatus: string;
     startNode: string | null;
     endNode: string | null;
+    isDark?: boolean;
 }
+
+// Memoized India Map Component for Performance
+const IndiaMap = React.memo(({ mapPaths, stateColors, isDark }: { mapPaths: string[], stateColors: string[], isDark: boolean }) => {
+    return (
+        <g>
+            {/* Shadow layer */}
+            <g transform="translate(2, 2)" opacity="0.05">
+                {mapPaths.map((pathD, idx) => (
+                    <path
+                        key={`shadow-${idx}`}
+                        d={pathD}
+                        fill="#000"
+                        stroke="none"
+                    />
+                ))}
+            </g>
+
+            {/* Main map with muted state boundaries */}
+            {mapPaths.map((pathD, idx) => (
+                <path
+                    key={`state-${idx}`}
+                    d={pathD}
+                    fill={stateColors[idx % stateColors.length]}
+                    stroke={isDark ? "#334155" : "#d1d5db"}
+                    strokeWidth="0.5"
+                    className="transition-all duration-200"
+                />
+            ))}
+
+            {/* Outer border */}
+            {mapPaths.map((pathD, idx) => (
+                <path
+                    key={`border-${idx}`}
+                    d={pathD}
+                    fill="none"
+                    stroke="#9ca3af"
+                    strokeWidth="0.8"
+                    opacity="0.4"
+                />
+            ))}
+        </g>
+    );
+});
+
+IndiaMap.displayName = "IndiaMap";
 
 // Graph Visualization Component
 function GraphVisualization({
@@ -412,20 +469,27 @@ function GraphVisualization({
     gameStatus,
     startNode,
     endNode,
+    isDark = false
 }: GraphVisualizationProps) {
     const [geoData, setGeoData] = useState<GeoJSON.FeatureCollection | null>(null);
     const [mapPaths, setMapPaths] = useState<string[]>([]);
+    const [zoom, setZoom] = useState(1);
+    const [offset, setOffset] = useState({ x: 0, y: 0 });
+    const isDragging = useRef(false);
+    const lastPos = useRef({ x: 0, y: 0 });
 
     const svgWidth = 680;
     const svgHeight = level === 3 ? 580 : 450;
 
-    // Create D3 projection for India
-    const getProjection = useCallback(() => {
+    // Create D3 projection for India once
+    const projection = React.useMemo(() => {
         return d3.geoMercator()
             .center([82, 22])
             .scale(850)
             .translate([svgWidth / 2, svgHeight / 2]);
     }, [svgWidth, svgHeight]);
+
+    const getProjection = useCallback(() => projection, [projection]);
 
     // Load GeoJSON data for Level 3
     useEffect(() => {
@@ -453,10 +517,9 @@ function GraphVisualization({
         setMapPaths(paths);
     }, [geoData, level, getProjection]);
 
-    // Get node coordinates - use D3 projection for Level 3, otherwise use static coords
+    // Get node coordinates - use memoized projection for Level 3
     const getNodeCoords = useCallback((nodeId: string): { x: number; y: number } => {
         if (level === 3 && indiaCityCoords[nodeId]) {
-            const projection = getProjection();
             const coords = projection([indiaCityCoords[nodeId].lng, indiaCityCoords[nodeId].lat]);
             if (coords) {
                 return { x: coords[0], y: coords[1] };
@@ -465,7 +528,7 @@ function GraphVisualization({
         // Fallback to static coordinates for levels 1 & 2
         const node = graph.nodes.find(n => n.id === nodeId);
         return node ? { x: node.x, y: node.y } : { x: 0, y: 0 };
-    }, [level, graph.nodes, getProjection]);
+    }, [level, graph.nodes, projection]);
 
     const getNodeColor = (nodeId: string) => {
         if (gameStatus === "selecting_start") {
@@ -488,10 +551,10 @@ function GraphVisualization({
         );
 
         if (gameStatus === "playing" && isNeighbor && !playerPath.includes(nodeId)) {
-            return "fill-amber-100 hover:fill-amber-200 cursor-pointer";
+            return isDark ? "fill-amber-500/30 hover:fill-amber-500/50 cursor-pointer" : "fill-amber-100 hover:fill-amber-200 cursor-pointer";
         }
 
-        if (!currentStep) return "fill-gray-50";
+        if (!currentStep) return isDark ? "fill-slate-800/50" : "fill-gray-50";
         if (nodeId === currentStep.currentNode) return "fill-amber-500";
         if (currentStep.visited.includes(nodeId)) return "fill-emerald-500";
         if (currentStep.priorityQueue.some((p) => p.node === nodeId)) return "fill-blue-500";
@@ -529,11 +592,11 @@ function GraphVisualization({
                 }
             }
         }
-        if (!currentStep) return "stroke-gray-200";
+        if (!currentStep) return isDark ? "stroke-slate-800" : "stroke-gray-200";
         if (currentStep.visited.includes(from) && currentStep.visited.includes(to)) {
-            return "stroke-gray-400";
+            return isDark ? "stroke-slate-600" : "stroke-gray-400";
         }
-        return "stroke-gray-300";
+        return isDark ? "stroke-slate-800" : "stroke-gray-300";
     };
 
     const getEdgeWidth = (from: string, to: string) => {
@@ -559,12 +622,14 @@ function GraphVisualization({
     };
 
     // Muted state colors - subtle and professional
-    const stateColors = [
-        '#f5f5f5', '#f0f0f0', '#ebebeb', '#e5e5e5', '#e0e0e0',
-        '#f5f5f5', '#f0f0f0', '#ebebeb', '#e5e5e5', '#e0e0e0',
-        '#f5f5f5', '#f0f0f0', '#ebebeb', '#e5e5e5', '#e0e0e0',
-        '#f5f5f5', '#f0f0f0', '#ebebeb', '#e5e5e5', '#e0e0e0',
-    ];
+    const stateColors = isDark
+        ? ['#0f172a', '#1e293b', '#334155', '#475569', '#1e1b4b', '#312e81']
+        : [
+            '#f5f5f5', '#f0f0f0', '#ebebeb', '#e5e5e5', '#e0e0e0',
+            '#f5f5f5', '#f0f0f0', '#ebebeb', '#e5e5e5', '#e0e0e0',
+            '#f5f5f5', '#f0f0f0', '#ebebeb', '#e5e5e5', '#e0e0e0',
+            '#f5f5f5', '#f0f0f0', '#ebebeb', '#e5e5e5', '#e0e0e0',
+        ];
 
     // Label positions for cities (outside map with leader lines)
     const labelPositions: Record<string, { labelX: number; labelY: number; anchor: 'start' | 'middle' | 'end' }> = {
@@ -581,269 +646,276 @@ function GraphVisualization({
     const isMapLoading = level === 3 && mapPaths.length === 0;
 
     return (
-        <div className="relative w-full h-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm min-h-[400px]">
+        <div className={`relative w-full h-full overflow-hidden rounded-xl border transition-colors duration-500 ${isDark ? 'bg-slate-900 border-slate-700 shadow-2xl' : 'bg-white border-gray-200 shadow-sm'} min-h-[400px]`}>
+            {/* Zoom Controls for Level 3 */}
+            {level === 3 && (
+                <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
+                    <button
+                        onClick={() => setZoom(prev => Math.min(prev + 0.5, 4))}
+                        className={`p-2 rounded-lg shadow-lg border transition-all ${isDark ? 'bg-slate-800 border-slate-700 text-emerald-400 hover:bg-slate-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+                    >
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                    </button>
+                    <button
+                        onClick={() => {
+                            setZoom(1);
+                            setOffset({ x: 0, y: 0 });
+                        }}
+                        className={`p-2 rounded-lg shadow-lg border transition-all ${isDark ? 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+                    >
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4h16v16H4z" /></svg>
+                    </button>
+                    <button
+                        onClick={() => setZoom(prev => Math.max(prev - 0.5, 0.5))}
+                        className={`p-2 rounded-lg shadow-lg border transition-all ${isDark ? 'bg-slate-800 border-slate-700 text-rose-400 hover:bg-slate-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+                    >
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>
+                    </button>
+                </div>
+            )}
+
             <svg
                 viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-                className="w-full h-full"
+                className={`w-full h-full ${level === 3 ? 'cursor-grab active:cursor-grabbing' : ''}`}
                 preserveAspectRatio="xMidYMid meet"
+                onMouseDown={(e) => {
+                    if (level !== 3) return;
+                    isDragging.current = true;
+                    lastPos.current = { x: e.clientX, y: e.clientY };
+                }}
+                onMouseMove={(e) => {
+                    if (!isDragging.current || level !== 3) return;
+                    const dx = (e.clientX - lastPos.current.x) / zoom;
+                    const dy = (e.clientY - lastPos.current.y) / zoom;
+                    setOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+                    lastPos.current = { x: e.clientX, y: e.clientY };
+                }}
+                onMouseUp={() => isDragging.current = false}
+                onMouseLeave={() => isDragging.current = false}
             >
-                {/* Grid Background */}
-                <defs>
-                    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#f3f4f6" strokeWidth="1" />
-                    </pattern>
-                    {/* Gradient for India map */}
-                    <linearGradient id="indiaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#f0fdf4" />
-                        <stop offset="100%" stopColor="#dcfce7" />
-                    </linearGradient>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#grid)" />
+                <g transform={`scale(${zoom}) translate(${offset.x}, ${offset.y})`} style={{ transformOrigin: 'center' }}>
+                    {/* Grid Background */}
+                    <defs>
+                        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                            <path d="M 40 0 L 0 0 0 40" fill="none" stroke={isDark ? "#1e293b" : "#f3f4f6"} strokeWidth="1" />
+                        </pattern>
+                        {/* Gradient for India map */}
+                        <linearGradient id="indiaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor={isDark ? "#1e293b" : "#f0fdf4"} />
+                            <stop offset="100%" stopColor={isDark ? "#0f172a" : "#dcfce7"} />
+                        </linearGradient>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#grid)" x={-svgWidth * 2} y={-svgHeight * 2} width={svgWidth * 5} height={svgHeight * 5} />
 
-                {/* Loading state for Level 3 */}
-                {level === 3 && isMapLoading && (
-                    <g>
-                        <rect x={svgWidth / 2 - 100} y={svgHeight / 2 - 30} width={200} height={60} rx={8} fill="#f9fafb" stroke="#e5e7eb" strokeWidth={1} />
-                        <text x={svgWidth / 2} y={svgHeight / 2 + 5} textAnchor="middle" className="fill-gray-500 text-sm font-medium">
-                            Map is loading...
-                        </text>
-                    </g>
-                )}
-
-                {/* India Map for Level 3 - D3 GeoJSON rendering */}
-                {level === 3 && !isMapLoading && (
-                    <g>
-                        {/* Shadow layer */}
-                        <g transform="translate(2, 2)" opacity="0.05">
-                            {mapPaths.map((pathD, idx) => (
-                                <path
-                                    key={`shadow-${idx}`}
-                                    d={pathD}
-                                    fill="#000"
-                                    stroke="none"
-                                />
-                            ))}
-                        </g>
-
-                        {/* Main map with muted state boundaries */}
-                        {mapPaths.map((pathD, idx) => (
-                            <path
-                                key={`state-${idx}`}
-                                d={pathD}
-                                fill={stateColors[idx % stateColors.length]}
-                                stroke="#d1d5db"
-                                strokeWidth="0.5"
-                                className="transition-all duration-200"
-                            />
-                        ))}
-
-                        {/* Outer border */}
-                        {mapPaths.map((pathD, idx) => (
-                            <path
-                                key={`border-${idx}`}
-                                d={pathD}
-                                fill="none"
-                                stroke="#9ca3af"
-                                strokeWidth="0.8"
-                                opacity="0.4"
-                            />
-                        ))}
-                    </g>
-                )}
-
-                {/* Edges */}
-                {(!isMapLoading || level !== 3) && graph.edges.map((edge, idx) => {
-                    const fromCoords = level === 3 ? getNodeCoords(edge.from) : graph.nodes.find((n) => n.id === edge.from)!;
-                    const toCoords = level === 3 ? getNodeCoords(edge.to) : graph.nodes.find((n) => n.id === edge.to)!;
-                    const midX = (fromCoords.x + toCoords.x) / 2;
-                    const midY = (fromCoords.y + toCoords.y) / 2;
-
-                    return (
-                        <g key={idx}>
-                            <line
-                                x1={fromCoords.x}
-                                y1={fromCoords.y}
-                                x2={toCoords.x}
-                                y2={toCoords.y}
-                                className={`${getEdgeColor(edge.from, edge.to)} transition-all duration-300`}
-                                strokeWidth={getEdgeWidth(edge.from, edge.to)}
-                            />
-                            <rect
-                                x={midX - 18}
-                                y={midY - 10}
-                                width={36}
-                                height={20}
-                                rx={4}
-                                className="fill-white stroke-gray-200"
-                                strokeWidth={1}
-                            />
-                            <text
-                                x={midX}
-                                y={midY + 5}
-                                textAnchor="middle"
-                                className="fill-gray-600 text-xs font-medium"
-                            >
-                                {edge.weight}
+                    {/* Loading state for Level 3 */}
+                    {level === 3 && isMapLoading && (
+                        <g>
+                            <rect x={svgWidth / 2 - 100} y={svgHeight / 2 - 30} width={200} height={60} rx={8} fill={isDark ? "#1e293b" : "#f9fafb"} stroke={isDark ? "#334155" : "#e5e7eb"} strokeWidth={1} />
+                            <text x={svgWidth / 2} y={svgHeight / 2 + 5} textAnchor="middle" className={`${isDark ? 'fill-slate-400' : 'fill-gray-500'} text-sm font-medium`}>
+                                Map is loading...
                             </text>
                         </g>
-                    );
-                })}
+                    )}
 
-                {/* Nodes */}
-                {(!isMapLoading || level !== 3) && graph.nodes.map((node) => {
-                    const coords = level === 3 ? getNodeCoords(node.id) : { x: node.x, y: node.y };
-                    const distance = currentStep?.distances[node.id];
-                    const nodeRadius = level === 3 ? 8 : 20;
-                    const labelPos = level === 3 ? labelPositions[node.id] : null;
+                    {/* India Map for Level 3 - D3 GeoJSON rendering */}
+                    {level === 3 && !isMapLoading && (
+                        <IndiaMap mapPaths={mapPaths} stateColors={stateColors} isDark={isDark} />
+                    )}
 
-                    return (
-                        <g key={node.id}>
-                            {/* Leader line for Level 3 labels */}
-                            {level === 3 && labelPos && (
+                    {/* Edges */}
+                    {(!isMapLoading || level !== 3) && graph.edges.map((edge, idx) => {
+                        const fromCoords = level === 3 ? getNodeCoords(edge.from) : graph.nodes.find((n) => n.id === edge.from)!;
+                        const toCoords = level === 3 ? getNodeCoords(edge.to) : graph.nodes.find((n) => n.id === edge.to)!;
+                        const midX = (fromCoords.x + toCoords.x) / 2;
+                        const midY = (fromCoords.y + toCoords.y) / 2;
+
+                        return (
+                            <g key={idx}>
                                 <line
-                                    x1={coords.x}
-                                    y1={coords.y}
-                                    x2={coords.x + labelPos.labelX * 0.7}
-                                    y2={coords.y + labelPos.labelY * 0.7}
-                                    stroke="#60a5fa"
-                                    strokeWidth={1}
-                                    opacity={0.8}
+                                    x1={fromCoords.x}
+                                    y1={fromCoords.y}
+                                    x2={toCoords.x}
+                                    y2={toCoords.y}
+                                    className={`${getEdgeColor(edge.from, edge.to)} transition-all duration-300`}
+                                    strokeWidth={getEdgeWidth(edge.from, edge.to)}
                                 />
-                            )}
-                            {/* Node shadow */}
-                            <circle
-                                cx={coords.x + 1}
-                                cy={coords.y + 1}
-                                r={nodeRadius}
-                                className="fill-gray-300 opacity-30"
-                            />
-                            {/* Node circle */}
-                            <circle
-                                cx={coords.x}
-                                cy={coords.y}
-                                r={nodeRadius}
-                                className={`${getNodeColor(node.id)} ${getNodeStroke(node.id)} transition-all duration-300`}
-                                strokeWidth={node.id === startNode || node.id === endNode ? 3 : 2}
-                                onClick={() => onNodeClick?.(node.id)}
-                            />
-                            {/* Distance label inside node for Level 3 */}
-                            {level === 3 && currentStep && (
+                                <rect
+                                    x={midX - 18}
+                                    y={midY - 10}
+                                    width={36}
+                                    height={20}
+                                    rx={4}
+                                    className={`${isDark ? 'fill-slate-800 stroke-slate-700' : 'fill-white stroke-gray-200'}`}
+                                    strokeWidth={1}
+                                />
                                 <text
-                                    x={coords.x}
-                                    y={coords.y + 1}
+                                    x={midX}
+                                    y={midY + 5}
                                     textAnchor="middle"
-                                    className="fill-white font-bold"
-                                    style={{ fontSize: '3px' }}
+                                    className={`${isDark ? 'fill-slate-300' : 'fill-gray-600'} text-xs font-medium`}
                                 >
-                                    {distance === Infinity ? "∞" : distance}
+                                    {edge.weight}
                                 </text>
-                            )}
-                            {/* Node label for Level 1 & 2 (above node) */}
-                            {level !== 3 && (
-                                <text
-                                    x={coords.x}
-                                    y={coords.y - nodeRadius - 6}
-                                    textAnchor="middle"
-                                    className="fill-gray-700 text-xs font-semibold"
-                                >
-                                    {node.name}
-                                </text>
-                            )}
-                            {/* External label with leader line for Level 3 */}
-                            {level === 3 && labelPos && (
-                                <g>
-                                    <rect
-                                        x={labelPos.anchor === 'end' ? coords.x + labelPos.labelX - 58 : coords.x + labelPos.labelX - 2}
-                                        y={coords.y + labelPos.labelY - 10}
-                                        width={60}
-                                        height={18}
-                                        rx={3}
-                                        fill="white"
-                                        stroke="#e5e7eb"
+                            </g>
+                        );
+                    })}
+
+                    {/* Nodes */}
+                    {(!isMapLoading || level !== 3) && graph.nodes.map((node) => {
+                        const coords = level === 3 ? getNodeCoords(node.id) : { x: node.x, y: node.y };
+                        const distance = currentStep?.distances[node.id];
+                        const nodeRadius = level === 3 ? 8 : 20;
+                        const labelPos = level === 3 ? labelPositions[node.id] : null;
+
+                        return (
+                            <g key={node.id}>
+                                {/* Leader line for Level 3 labels */}
+                                {level === 3 && labelPos && (
+                                    <line
+                                        x1={coords.x}
+                                        y1={coords.y}
+                                        x2={coords.x + labelPos.labelX * 0.7}
+                                        y2={coords.y + labelPos.labelY * 0.7}
+                                        stroke="#60a5fa"
                                         strokeWidth={1}
-                                        opacity={0.95}
+                                        opacity={0.8}
                                     />
+                                )}
+                                {/* Node shadow */}
+                                <circle
+                                    cx={coords.x + 1}
+                                    cy={coords.y + 1}
+                                    r={nodeRadius}
+                                    className={`${isDark ? 'fill-black' : 'fill-gray-300'} opacity-30`}
+                                />
+                                {/* Node circle */}
+                                <circle
+                                    cx={coords.x}
+                                    cy={coords.y}
+                                    r={nodeRadius}
+                                    className={`${getNodeColor(node.id)} ${getNodeStroke(node.id)} transition-all duration-300`}
+                                    strokeWidth={node.id === startNode || node.id === endNode ? 3 : 2}
+                                    onClick={() => onNodeClick?.(node.id)}
+                                />
+                                {/* Distance label inside node for Level 3 */}
+                                {level === 3 && currentStep && (
                                     <text
-                                        x={labelPos.anchor === 'end' ? coords.x + labelPos.labelX - 5 : coords.x + labelPos.labelX + 5}
-                                        y={coords.y + labelPos.labelY + 3}
-                                        textAnchor={labelPos.anchor}
-                                        className="fill-gray-700 font-semibold"
-                                        style={{ fontSize: '9px' }}
+                                        x={coords.x}
+                                        y={coords.y + 1}
+                                        textAnchor="middle"
+                                        className="fill-white font-bold"
+                                        style={{ fontSize: '3px' }}
+                                    >
+                                        {distance === Infinity ? "∞" : distance}
+                                    </text>
+                                )}
+                                {/* Node label for Level 1 & 2 (above node) */}
+                                {level !== 3 && (
+                                    <text
+                                        x={coords.x}
+                                        y={coords.y - nodeRadius - 6}
+                                        textAnchor="middle"
+                                        className={`${isDark ? 'fill-slate-300' : 'fill-gray-700'} text-xs font-semibold`}
                                     >
                                         {node.name}
                                     </text>
-                                    {/* Start/End badge */}
-                                    {(node.id === startNode || node.id === endNode) && (
+                                )}
+                                {/* External label with leader line for Level 3 */}
+                                {level === 3 && labelPos && (
+                                    <g>
+                                        <rect
+                                            x={labelPos.anchor === 'end' ? coords.x + labelPos.labelX - 58 : coords.x + labelPos.labelX - 2}
+                                            y={coords.y + labelPos.labelY - 10}
+                                            width={60}
+                                            height={18}
+                                            rx={3}
+                                            fill={isDark ? "#1e293b" : "white"}
+                                            stroke={isDark ? "#334155" : "#e5e7eb"}
+                                            strokeWidth={1}
+                                            opacity={0.95}
+                                        />
                                         <text
-                                            x={labelPos.anchor === 'end' ? coords.x + labelPos.labelX - 55 : coords.x + labelPos.labelX + 55}
+                                            x={labelPos.anchor === 'end' ? coords.x + labelPos.labelX - 5 : coords.x + labelPos.labelX + 5}
                                             y={coords.y + labelPos.labelY + 3}
-                                            textAnchor={labelPos.anchor === 'end' ? 'start' : 'end'}
-                                            className={node.id === startNode ? 'fill-emerald-600' : 'fill-rose-600'}
-                                            style={{ fontSize: '7px', fontWeight: 'bold' }}
+                                            textAnchor={labelPos.anchor}
+                                            className={isDark ? "fill-slate-200 font-semibold" : "fill-gray-700 font-semibold"}
+                                            style={{ fontSize: '9px' }}
                                         >
-                                            {node.id === startNode ? '●' : '◆'}
+                                            {node.name}
                                         </text>
-                                    )}
-                                </g>
-                            )}
-                            {/* Distance label for Level 1 & 2 */}
-                            {level !== 3 && currentStep && (
-                                <text
-                                    x={coords.x}
-                                    y={coords.y + 4}
-                                    textAnchor="middle"
-                                    className="fill-white text-xs font-bold"
-                                >
-                                    {distance === Infinity ? "∞" : distance}
-                                </text>
-                            )}
-                            {/* Start indicator */}
-                            {node.id === startNode && (
-                                <g>
-                                    <rect
-                                        x={coords.x - 18}
-                                        y={coords.y + nodeRadius + 3}
-                                        width={36}
-                                        height={14}
-                                        rx={3}
-                                        className="fill-emerald-500 stroke-emerald-600"
-                                        strokeWidth={1}
-                                    />
+                                        {/* Start/End badge */}
+                                        {(node.id === startNode || node.id === endNode) && (
+                                            <text
+                                                x={labelPos.anchor === 'end' ? coords.x + labelPos.labelX - 55 : coords.x + labelPos.labelX + 55}
+                                                y={coords.y + labelPos.labelY + 3}
+                                                textAnchor={labelPos.anchor === 'end' ? 'start' : 'end'}
+                                                className={node.id === startNode ? 'fill-emerald-600' : 'fill-rose-600'}
+                                                style={{ fontSize: '7px', fontWeight: 'bold' }}
+                                            >
+                                                {node.id === startNode ? '●' : '◆'}
+                                            </text>
+                                        )}
+                                    </g>
+                                )}
+                                {/* Distance label for Level 1 & 2 */}
+                                {level !== 3 && currentStep && (
                                     <text
                                         x={coords.x}
-                                        y={coords.y + nodeRadius + 13}
+                                        y={coords.y + 4}
                                         textAnchor="middle"
-                                        className="fill-white text-[9px] font-bold"
+                                        className="fill-white text-xs font-bold"
                                     >
-                                        START
+                                        {distance === Infinity ? "∞" : distance}
                                     </text>
-                                </g>
-                            )}
-                            {/* End indicator */}
-                            {node.id === endNode && (
-                                <g>
-                                    <rect
-                                        x={coords.x - 14}
-                                        y={coords.y + nodeRadius + 3}
-                                        width={28}
-                                        height={14}
-                                        rx={3}
-                                        className="fill-rose-500 stroke-rose-600"
-                                        strokeWidth={1}
-                                    />
-                                    <text
-                                        x={coords.x}
-                                        y={coords.y + nodeRadius + 13}
-                                        textAnchor="middle"
-                                        className="fill-white text-[9px] font-bold"
-                                    >
-                                        END
-                                    </text>
-                                </g>
-                            )}
-                        </g>
-                    );
-                })}
+                                )}
+                                {/* Start indicator */}
+                                {node.id === startNode && (
+                                    <g>
+                                        <rect
+                                            x={coords.x - 18}
+                                            y={coords.y + nodeRadius + 3}
+                                            width={36}
+                                            height={14}
+                                            rx={3}
+                                            className="fill-emerald-500 stroke-emerald-600"
+                                            strokeWidth={1}
+                                        />
+                                        <text
+                                            x={coords.x}
+                                            y={coords.y + nodeRadius + 13}
+                                            textAnchor="middle"
+                                            className="fill-white text-[9px] font-bold"
+                                        >
+                                            START
+                                        </text>
+                                    </g>
+                                )}
+                                {/* End indicator */}
+                                {node.id === endNode && (
+                                    <g>
+                                        <rect
+                                            x={coords.x - 14}
+                                            y={coords.y + nodeRadius + 3}
+                                            width={28}
+                                            height={14}
+                                            rx={3}
+                                            className="fill-rose-500 stroke-rose-600"
+                                            strokeWidth={1}
+                                        />
+                                        <text
+                                            x={coords.x}
+                                            y={coords.y + nodeRadius + 13}
+                                            textAnchor="middle"
+                                            className="fill-white text-[9px] font-bold"
+                                        >
+                                            END
+                                        </text>
+                                    </g>
+                                )}
+                            </g>
+                        );
+                    })}
+                </g>
             </svg>
         </div>
     );
@@ -950,13 +1022,179 @@ function DistanceTable({
     );
 }
 
+// Interactive Intro Graph Component
+interface IntroGraphProps {
+    level: number;
+    isDark: boolean;
+}
+
+function InteractiveIntroGraph({ level, isDark }: IntroGraphProps) {
+    // Level-specific graph configurations
+    const configs = [
+        {
+            nodes: [
+                { id: 1, x: 50, y: 100 }, { id: 2, x: 150, y: 50 },
+                { id: 3, x: 150, y: 150 }, { id: 4, x: 250, y: 100 },
+                { id: 5, x: 350, y: 100 }
+            ],
+            edges: [
+                { from: 1, to: 2, weight: 4 }, { from: 1, to: 3, weight: 2 },
+                { from: 2, to: 4, weight: 3 }, { from: 3, to: 4, weight: 5 },
+                { from: 4, to: 5, weight: 1 }
+            ],
+            shortestPath: [1, 2, 4, 5]
+        },
+        {
+            nodes: [
+                { id: 1, x: 50, y: 50 }, { id: 2, x: 150, y: 30 },
+                { id: 3, x: 50, y: 150 }, { id: 4, x: 150, y: 100 },
+                { id: 5, x: 250, y: 50 }, { id: 6, x: 250, y: 150 },
+                { id: 7, x: 350, y: 100 }
+            ],
+            edges: [
+                { from: 1, to: 2, weight: 2 }, { from: 1, to: 3, weight: 8 },
+                { from: 2, to: 4, weight: 5 }, { from: 2, to: 5, weight: 3 },
+                { from: 3, to: 4, weight: 1 }, { from: 4, to: 6, weight: 6 },
+                { from: 5, to: 7, weight: 4 }, { from: 6, to: 7, weight: 2 }
+            ],
+            shortestPath: [1, 2, 5, 7]
+        },
+        {
+            nodes: [
+                { id: 1, x: 50, y: 100 }, { id: 2, x: 120, y: 40 },
+                { id: 3, x: 120, y: 160 }, { id: 4, x: 200, y: 100 },
+                { id: 5, x: 280, y: 40 }, { id: 6, x: 280, y: 160 },
+                { id: 7, x: 350, y: 100 }, { id: 8, x: 200, y: 30 },
+                { id: 9, x: 200, y: 170 }
+            ],
+            edges: [
+                { from: 1, to: 2, weight: 10 }, { from: 1, to: 3, weight: 15 },
+                { from: 2, to: 4, weight: 5 }, { from: 2, to: 8, weight: 2 },
+                { from: 3, to: 4, weight: 8 }, { from: 3, to: 9, weight: 4 },
+                { from: 8, to: 5, weight: 3 }, { from: 9, to: 6, weight: 7 },
+                { from: 4, to: 5, weight: 12 }, { from: 4, to: 6, weight: 11 },
+                { from: 5, to: 7, weight: 6 }, { from: 6, to: 7, weight: 9 }
+            ],
+            shortestPath: [1, 2, 8, 5, 7]
+        }
+    ];
+
+    const { nodes, edges, shortestPath } = configs[level - 1];
+
+    const colors = {
+        line: isDark ? "#334155" : "#e2e8f0",
+        node: isDark ? "#1e293b" : "#ffffff",
+        stroke: isDark ? "#475569" : "#cbd5e1",
+        text: isDark ? "#94a3b8" : "#64748b",
+        highlight: "#10b981", // Emerald Neon
+        path: "#3b82f6"      // Blue Neon
+    };
+
+    return (
+        <div className="w-full max-w-lg mx-auto py-2">
+            <svg viewBox="0 0 400 200" className="w-full h-auto overflow-visible drop-shadow-2xl">
+                <AnimatePresence mode="wait">
+                    <motion.g key={level}>
+                        {/* Edges */}
+                        {edges.map((edge, i) => {
+                            const from = nodes.find(n => n.id === edge.from)!;
+                            const to = nodes.find(n => n.id === edge.to)!;
+                            return (
+                                <g key={`edge-${level}-${i}`}>
+                                    <motion.line
+                                        x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+                                        stroke={colors.line} strokeWidth="1.5"
+                                        initial={{ pathLength: 0, opacity: 0 }}
+                                        animate={{ pathLength: 1, opacity: 1 }}
+                                        transition={{ duration: 0.4, delay: i * 0.03 }}
+                                    />
+                                    <motion.text
+                                        x={(from.x + to.x) / 2} y={(from.y + to.y) / 2 - 8}
+                                        textAnchor="middle" className="font-black italic bg-slate-900"
+                                        style={{ fontSize: '12px', fill: colors.text }}
+                                        initial={{ opacity: 0, scale: 0 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ delay: 0.6 + i * 0.03 }}
+                                    >
+                                        {edge.weight}
+                                    </motion.text>
+                                </g>
+                            );
+                        })}
+
+                        {/* Shortest Path Highlight */}
+                        {shortestPath.slice(0, -1).map((nodeId, i) => {
+                            const from = nodes.find(n => n.id === nodeId)!;
+                            const to = nodes.find(n => n.id === shortestPath[i + 1])!;
+                            return (
+                                <motion.line
+                                    key={`path-${level}-${i}`}
+                                    x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+                                    stroke={colors.path} strokeWidth="4"
+                                    strokeLinecap="round"
+                                    initial={{ pathLength: 0 }}
+                                    animate={{ pathLength: 1 }}
+                                    transition={{ duration: 0.6, delay: 1.2 + i * 0.15 }}
+                                />
+                            );
+                        })}
+
+                        {/* Nodes */}
+                        {nodes.map((node) => (
+                            <motion.g
+                                key={`node-${level}-${node.id}`}
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.05 * node.id }}
+                            >
+                                <circle
+                                    cx={node.x} cy={node.y} r="10"
+                                    fill={colors.node} stroke={colors.stroke}
+                                    strokeWidth="2"
+                                />
+                                <motion.circle
+                                    cx={node.x} cy={node.y} r="6"
+                                    fill={shortestPath.includes(node.id) ? colors.path : colors.highlight}
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: shortestPath.includes(node.id) ? 1 : 0.6 }}
+                                    transition={{ delay: shortestPath.includes(node.id) ? 1.2 + (shortestPath.indexOf(node.id) * 0.15) : 0.5 }}
+                                />
+                                {shortestPath.includes(node.id) && (
+                                    <motion.circle
+                                        cx={node.x} cy={node.y} r="14"
+                                        fill="none" stroke={colors.path} strokeWidth="1"
+                                        initial={{ opacity: 0, scale: 0.5 }}
+                                        animate={{ opacity: [0, 0.4, 0], scale: [1, 2] }}
+                                        transition={{ duration: 1.5, repeat: Infinity }}
+                                    />
+                                )}
+                            </motion.g>
+                        ))}
+                    </motion.g>
+                </AnimatePresence>
+            </svg>
+        </div>
+    );
+}
+
 // Main Component
 export default function LearnPage() {
     const [currentLevel, setCurrentLevel] = useState(1);
     const [gameState, setGameState] = useState<"intro" | "selecting_start" | "selecting_end" | "playing" | "complete">("intro");
     const [steps, setSteps] = useState<DijkstraStep[]>([]);
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
-    const [showHint, setShowHint] = useState(false);
+    const [theme, setTheme] = useState<"light" | "dark">("dark");
+
+    useEffect(() => {
+        const savedTheme = localStorage.getItem("game-theme") as "light" | "dark";
+        if (savedTheme) setTheme(savedTheme);
+    }, []);
+
+    const toggleTheme = () => {
+        const newTheme = theme === "light" ? "dark" : "light";
+        setTheme(newTheme);
+        localStorage.setItem("game-theme", newTheme);
+    };
 
     // Game specific state
     const [startNode, setStartNode] = useState<string | null>(null);
@@ -1041,81 +1279,153 @@ export default function LearnPage() {
         }
     }, [currentLevel]);
 
+    const isDark = theme === "dark";
+
     return (
-        <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
-            {/* Header */}
-            <header className="border-b border-gray-200 bg-white">
-                <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-                    <Link
-                        href="/"
-                        className="flex items-center gap-2 text-gray-600 transition-colors hover:text-gray-900"
-                    >
-                        {Icons.arrowLeft}
-                        <span className="font-medium">Back to Home</span>
-                    </Link>
-                    <div className="flex items-center gap-4">
-                        <h1 className="text-xl font-bold text-gray-900">Learn Dijkstra&apos;s Algorithm</h1>
+        <div className={`h-screen flex flex-col overflow-hidden font-sans transition-colors duration-500 ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-gray-50 text-slate-900'}`}>
+            {/* Header - Hidden during Intro */}
+            {gameState !== "intro" && (
+                <header className={`border-b border-gray-200 transition-colors ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'}`}>
+                    <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+                        <Link
+                            href="/"
+                            className="flex items-center gap-2 text-gray-600 transition-colors hover:text-gray-900"
+                        >
+                            {Icons.arrowLeft}
+                            <span className="font-medium">Back to Home</span>
+                        </Link>
+                        <div className="flex items-center gap-4">
+                            <h1 className={`text-3xl font-bold ${isDark ? 'text-emerald-400' : 'text-slate-900'}`}>
+                                {level.title.split(': ')[1]}
+                            </h1>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {[1, 2, 3].map((lvl) => (
+                                <button
+                                    key={lvl}
+                                    onClick={() => {
+                                        setCurrentLevel(lvl);
+                                        setGameState("intro");
+                                        setSteps([]);
+                                        setCurrentStepIndex(0);
+                                    }}
+                                    className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold transition-all ${currentLevel === lvl
+                                        ? "bg-gray-900 text-white"
+                                        : currentLevel > lvl
+                                            ? "bg-emerald-500 text-white"
+                                            : "bg-gray-200 text-gray-500 hover:bg-gray-300"
+                                        }`}
+                                >
+                                    {lvl}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        {[1, 2, 3].map((lvl) => (
-                            <button
-                                key={lvl}
-                                onClick={() => {
-                                    setCurrentLevel(lvl);
-                                    setGameState("intro");
-                                    setSteps([]);
-                                    setCurrentStepIndex(0);
-                                }}
-                                className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold transition-all ${currentLevel === lvl
-                                    ? "bg-gray-900 text-white"
-                                    : currentLevel > lvl
-                                        ? "bg-emerald-500 text-white"
-                                        : "bg-gray-200 text-gray-500 hover:bg-gray-300"
-                                    }`}
-                            >
-                                {lvl}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            </header>
+                </header>
+            )}
 
             <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-4 overflow-hidden flex flex-col">
                 {/* Intro State */}
                 {gameState === "intro" && (
-                    <div className="mx-auto max-w-2xl">
-                        <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-                            <div className="mb-6 text-center">
-                                <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 text-gray-600">
-                                    {currentLevel === 1 ? Icons.building : currentLevel === 2 ? Icons.monument : Icons.map}
-                                </div>
-                                <h3 className="text-2xl font-bold text-gray-900">{level.challenge}</h3>
-                                <p className="mt-2 text-gray-500">{level.description}</p>
-                            </div>
-
-                            <div className="mb-6 rounded-lg bg-gray-50 p-4 border border-gray-100">
-                                <h4 className="mb-3 flex items-center gap-2 font-semibold text-gray-700">
-                                    <span className="text-gray-500">{Icons.book}</span>
-                                    How Dijkstra Works
-                                </h4>
-                                <ol className="list-inside list-decimal space-y-2 text-sm text-gray-600">
-                                    <li>Start with source node (distance = 0), all others = ∞</li>
-                                    <li>Pick unvisited node with smallest known distance</li>
-                                    <li>Update distances to all its unvisited neighbors</li>
-                                    <li>Mark current node as visited</li>
-                                    <li>Repeat until destination is reached</li>
-                                </ol>
-                            </div>
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className={`fixed inset-0 z-50 flex flex-col items-center justify-center p-6 transition-colors duration-700 ${isDark ? 'bg-[#020617]' : 'bg-slate-50'}`}
+                    >
+                        {/* 1. Minimal Top Bar */}
+                        <div className="absolute top-0 left-0 right-0 p-8 flex justify-between items-center max-w-7xl mx-auto w-full">
+                            <Link
+                                href="/"
+                                className={`flex items-center gap-1.5 text-xs font-black tracking-widest transition-colors ${isDark ? 'text-slate-400 hover:text-emerald-400' : 'text-slate-500 hover:text-slate-900'}`}
+                            >
+                                <span className="text-sm">←</span> BACK
+                            </Link>
 
                             <button
-                                onClick={startSetup}
-                                className="w-full flex items-center justify-center gap-2 rounded-lg bg-gray-900 px-6 py-4 text-lg font-semibold text-white shadow-sm transition-all hover:bg-gray-800"
+                                onClick={toggleTheme}
+                                className={`p-2.5 rounded-xl transition-all duration-300 ${isDark ? 'bg-slate-800 text-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.3)]' : 'bg-white text-slate-600 shadow-sm border border-slate-200'}`}
                             >
-                                {Icons.rocket}
-                                Start Level {currentLevel}
+                                {isDark ? Icons.sun : Icons.moon}
                             </button>
                         </div>
-                    </div>
+
+                        {/* 2. Hero Title Section */}
+                        <motion.div
+                            initial={{ y: -20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ delay: 0.3 }}
+                            className="mb-10 text-center"
+                        >
+                            <h2 className={`text-4xl md:text-5xl font-black italic tracking-tighter px-4 py-2 overflow-visible ${isDark ? 'text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-500' : 'text-slate-900'}`}>
+                                Pathfinding Odyssey
+                            </h2>
+                            <div className={`h-1.5 w-24 mx-auto mt-4 rounded-full ${isDark ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-slate-900'}`}></div>
+                        </motion.div>
+
+                        {/* 3. Central Graphic */}
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: 0.5, duration: 0.8 }}
+                            className="w-full"
+                        >
+                            <InteractiveIntroGraph level={currentLevel} isDark={isDark} />
+                        </motion.div>
+
+                        {/* 4. Micro Hint */}
+                        <motion.p
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 3 }}
+                            className={`mt-4 text-[11px] font-black uppercase tracking-[0.3em] ${isDark ? 'text-emerald-500/80 drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]' : 'text-slate-600'}`}
+                        >
+                            Algorithm: Dijkstra’s Global Optimal
+                        </motion.p>
+
+                        {/* 5. Primary CTA Button */}
+                        <motion.button
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ delay: 1, type: "spring" }}
+                            onClick={startSetup}
+                            className={`mt-14 px-16 py-4 rounded-xl text-sm font-black uppercase tracking-[0.2em] transition-all active:scale-95 ${isDark
+                                ? 'bg-emerald-500 text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:bg-emerald-400 hover:shadow-[0_0_50px_rgba(16,185,129,0.6)]'
+                                : 'bg-slate-900 text-white shadow-xl hover:bg-slate-800'
+                                }`}
+                        >
+                            Begin Journey
+                        </motion.button>
+
+                        {/* 6. Progress Indicator (Bottom) */}
+                        <div className="absolute bottom-12 flex flex-col items-center gap-6">
+                            <div className="flex items-center gap-4">
+                                {[
+                                    { id: 1, name: "Level 1" },
+                                    { id: 2, name: "Level 2" },
+                                    { id: 3, name: "Level 3" }
+                                ].map((l, idx) => (
+                                    <div key={l.id} className="flex flex-col items-center group">
+                                        <div className="flex items-center">
+                                            <motion.div
+                                                animate={{
+                                                    scale: l.id === currentLevel ? 1.4 : 1,
+                                                    backgroundColor: l.id === currentLevel ? (isDark ? '#10b981' : '#0f172a') : (isDark ? '#1e293b' : '#cbd5e1')
+                                                }}
+                                                className={`w-3 h-3 rounded-full relative z-10 transition-all duration-500 ${l.id === currentLevel ? 'shadow-[0_0_15px_#10b981]' : ''}`}
+                                            />
+                                            {idx < 2 && (
+                                                <div className={`w-20 h-[2px] mx-1 rounded-full transition-all duration-1000 ${l.id < currentLevel ? (isDark ? 'bg-emerald-500 shadow-[0_0_5px_#10b981]' : 'bg-slate-900') : (isDark ? 'bg-slate-800' : 'bg-slate-200')}`} />
+                                            )}
+                                        </div>
+                                        <span className={`mt-3 text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${l.id === currentLevel ? (isDark ? 'text-emerald-400 scale-110 opacity-100' : 'text-slate-900 opacity-100') : 'text-slate-500 opacity-40'}`}>
+                                            {l.name}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </motion.div>
                 )}
 
                 {/* Playing State */}
@@ -1123,6 +1433,21 @@ export default function LearnPage() {
                     <div className="flex-1 min-h-0 grid gap-6 lg:grid-cols-3">
                         {/* Graph Visualization */}
                         <div className="lg:col-span-2 relative flex flex-col min-h-0">
+                            {/* Pro Tip - Relocated to top of graph */}
+                            <div className={`mb-4 p-4 rounded-xl border transition-all duration-500 ${isDark ? 'bg-slate-900/40 border-slate-800 shadow-inner' : 'bg-amber-50 border-amber-100 shadow-sm'}`}>
+                                <div className="flex items-start gap-3">
+                                    <div className={`mt-1 h-6 w-6 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-600'}`}>
+                                        {Icons.lightbulb}
+                                    </div>
+                                    <div>
+                                        <h4 className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${isDark ? 'text-amber-500/60' : 'text-amber-600'}`}>Strategic Insight</h4>
+                                        <p className={`text-xs leading-relaxed font-medium ${isDark ? 'text-slate-300' : 'text-amber-900'}`}>
+                                            {level.hint}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="flex-1 min-h-0 relative">
                                 <GraphVisualization
                                     graph={level.graph}
@@ -1134,37 +1459,11 @@ export default function LearnPage() {
                                     gameStatus={gameState}
                                     startNode={startNode}
                                     endNode={endNode}
+                                    isDark={isDark}
                                 />
                             </div>
 
-                            {/* Game Stats */}
-                            <div className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                                <div className="flex items-center gap-6">
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Total Distance</span>
-                                        <span className="text-2xl font-black text-gray-900">{playerDist}</span>
-                                    </div>
-                                    <div className="h-8 w-px bg-gray-200"></div>
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Current Node</span>
-                                        <span className="text-sm font-bold text-gray-700">
-                                            {playerPath.length > 0
-                                                ? level.graph.nodes.find(n => n.id === playerPath[playerPath.length - 1])?.name
-                                                : "None"}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <button
-                                    onClick={resetLevel}
-                                    className="flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 transition-all"
-                                >
-                                    {Icons.refresh}
-                                    Reset
-                                </button>
-                            </div>
-
-                            <div className="mt-4 flex flex-wrap items-center gap-6 text-sm text-gray-600 bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                            <div className={`mt-4 flex flex-wrap items-center gap-6 text-sm bg-opacity-50 transition-colors ${isDark ? 'bg-slate-900/50 text-slate-400' : 'bg-white text-gray-600'} p-3 rounded-xl border ${isDark ? 'border-slate-800' : 'border-gray-100'} shadow-sm`}>
                                 <div className="flex items-center gap-2">
                                     <div className="h-4 w-4 rounded-full bg-emerald-500 shadow-sm shadow-emerald-200"></div>
                                     <span className="font-bold text-[10px] uppercase">Start</span>
@@ -1178,31 +1477,83 @@ export default function LearnPage() {
                                     <span className="font-bold text-[10px] uppercase">Path</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <div className="h-4 w-4 rounded-full bg-amber-100 border border-amber-300"></div>
+                                    <div className={`h-4 w-4 rounded-full border ${isDark ? 'bg-amber-500/20 border-amber-500/50' : 'bg-amber-100 border-amber-300'}`}></div>
                                     <span className="font-bold text-[10px] uppercase">Valid Moves</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Side Panel */}
-                        <div className="overflow-y-auto space-y-4 pr-2 custom-scrollbar">
-                            {/* Instruction Component */}
-                            <div className="bg-gradient-to-br from-indigo-600 to-purple-700 text-white p-5 rounded-2xl shadow-lg border border-white/10 animate-in fade-in slide-in-from-right-4 duration-500 relative overflow-hidden">
-                                <div className="absolute -right-4 -top-4 h-24 w-24 bg-white/10 rounded-full blur-2xl"></div>
-                                <div className="flex items-center gap-3 mb-2 relative z-10">
-                                    <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center">
-                                        {Icons.lightbulb}
+                        <div className="overflow-y-auto space-y-6 pt-4 pr-2 custom-scrollbar">
+                            {/* Instruction Component - Enhanced Floating and Visibility */}
+                            <motion.div
+                                animate={{
+                                    y: [0, -8, 0],
+                                    boxShadow: isDark
+                                        ? ["0 4px 20px rgba(16,185,129,0.1)", "0 10px 40px rgba(16,185,129,0.3)", "0 4px 20px rgba(16,185,129,0.1)"]
+                                        : ["0 4px 20px rgba(79,70,229,0.1)", "0 10px 40px rgba(79,70,229,0.3)", "0 4px 20px rgba(79,70,229,0.1)"]
+                                }}
+                                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                                className={`mt-6 p-6 rounded-2xl border-2 relative overflow-hidden transition-all duration-500 ${isDark ? 'bg-slate-900 border-emerald-500/50 text-white shadow-emerald-500/20' : 'bg-gradient-to-br from-indigo-600 to-purple-800 text-white border-white/20'}`}
+                            >
+                                <div className={`absolute -right-4 -top-4 h-28 w-28 rounded-full blur-3xl transition-colors ${isDark ? 'bg-emerald-400/20' : 'bg-white/20'}`}></div>
+                                <div className="flex items-center gap-4 mb-3 relative z-10">
+                                    <motion.div
+                                        animate={{ scale: [1, 1.2, 1] }}
+                                        transition={{ duration: 2, repeat: Infinity }}
+                                        className={`h-10 w-10 rounded-xl flex items-center justify-center transition-colors ${isDark ? 'bg-emerald-500 text-slate-950 shadow-[0_0_20px_rgba(16,185,129,0.5)]' : 'bg-white text-indigo-600 shadow-lg'}`}
+                                    >
+                                        {Icons.rocket}
+                                    </motion.div>
+                                    <div>
+                                        <span className={`text-[10px] font-black uppercase tracking-[0.25em] ${isDark ? 'text-emerald-400' : 'text-indigo-100'}`}>Next Objective</span>
+                                        <h4 className="text-xs font-bold opacity-80 uppercase tracking-widest text-white/60">Active Intel</h4>
                                     </div>
-                                    <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Mission Guidance</span>
                                 </div>
-                                <p className="text-sm font-bold leading-relaxed relative z-10">
+                                <p className={`text-base font-black leading-snug relative z-10 ${isDark ? 'text-slate-50' : 'text-white'}`}>
                                     {instruction}
                                 </p>
+                                <div className={`mt-3 h-1 w-full rounded-full overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-white/10'}`}>
+                                    <motion.div
+                                        animate={{ x: ["-100%", "100%"] }}
+                                        transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+                                        className={`h-full w-1/3 ${isDark ? 'bg-emerald-400 shadow-[0_0_10px_#10b981]' : 'bg-white'}`}
+                                    />
+                                </div>
+                            </motion.div>
+
+                            {/* Game Stats - Moved from main area */}
+                            <div className={`p-5 rounded-2xl border transition-colors duration-500 ${isDark ? 'bg-slate-900 border-slate-700 shadow-2xl' : 'bg-white border-gray-200 shadow-sm'}`}>
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex flex-col">
+                                            <span className={`text-[10px] uppercase font-black tracking-widest ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>Total Distance</span>
+                                            <span className={`text-2xl font-black ${isDark ? 'text-emerald-400' : 'text-gray-900'}`}>{playerDist}</span>
+                                        </div>
+                                        <button
+                                            onClick={resetLevel}
+                                            className={`p-2 rounded-xl transition-all ${isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                                            title="Reset Level"
+                                        >
+                                            {Icons.refresh}
+                                        </button>
+                                    </div>
+                                    <div className={`h-px w-full ${isDark ? 'bg-slate-800' : 'bg-gray-100'}`}></div>
+                                    <div className="flex flex-col">
+                                        <span className={`text-[10px] uppercase font-black tracking-widest ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>Current Location</span>
+                                        <span className={`text-sm font-black ${isDark ? 'text-slate-200' : 'text-gray-700'}`}>
+                                            {playerPath.length > 0
+                                                ? level.graph.nodes.find(n => n.id === playerPath[playerPath.length - 1])?.name
+                                                : "Initial Selection"}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-                                <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-gray-900">
+
+                            <div className={`p-5 rounded-2xl border transition-colors duration-500 ${isDark ? 'bg-slate-900 border-slate-700 shadow-2xl text-slate-100' : 'bg-white border-gray-200 shadow-sm text-gray-900'}`}>
+                                <h3 className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-widest">
                                     {Icons.route}
-                                    Your Path
+                                    Mission Path
                                 </h3>
                                 <div className="space-y-3">
                                     {playerPath.length === 0 ? (
@@ -1223,15 +1574,7 @@ export default function LearnPage() {
                                 </div>
                             </div>
 
-                            <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
-                                <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-amber-900">
-                                    {Icons.lightbulb}
-                                    Pro Tip
-                                </h3>
-                                <p className="text-sm text-amber-800 leading-relaxed font-medium">
-                                    {level.hint}
-                                </p>
-                            </div>
+
                         </div>
                     </div>
                 )}
@@ -1241,67 +1584,68 @@ export default function LearnPage() {
                     <div className="flex-1 overflow-y-auto pr-2 animate-in fade-in zoom-in duration-500 flex flex-col gap-6 pb-28">
                         {(() => {
                             const optimalDist = currentStep.distances[endNode!];
-                            const ratio = playerDist / optimalDist;
-                            let colorClass = "emerald";
-                            let badgeText = "God Tier! Absolute Perfection.";
-                            let desc = "You found the absolute shortest path possible. Your efficiency is unmatched!";
+                            const won = playerDist === optimalDist;
 
-                            if (ratio === 1) {
-                                // Default
-                            } else if (ratio <= 1.1) {
-                                colorClass = "green";
-                                badgeText = "Excellent Performance!";
-                                desc = "You were incredibly close to the optimal path. A few more tries and you'll hit perfection.";
-                            } else if (ratio <= 1.3) {
-                                colorClass = "amber";
-                                badgeText = "Good Effort!";
-                                desc = "A decent path, but there were slightly more efficient turns you could have taken.";
-                            } else {
-                                colorClass = "rose";
-                                badgeText = "Keep Practicing!";
-                                desc = "You reached the destination, but there's a much shorter route waiting to be discovered.";
-                            }
+                            const colorClass = won ? "emerald" : "rose";
+                            const badgeText = won ? "MISSION SUCCESS" : "MISSION FAILED";
+                            const desc = won
+                                ? "You found the globally optimal path. Strategic efficiency achieved."
+                                : "You arrived, but your path was suboptimal. Efficiency targets were not met.";
 
-                            const BgColors = {
+                            const BgColors = isDark ? {
+                                emerald: "bg-emerald-500/10 border-emerald-500/30",
+                                rose: "bg-rose-500/10 border-rose-500/30"
+                            } : {
                                 emerald: "bg-emerald-50 border-emerald-200",
-                                green: "bg-green-50 border-green-200",
-                                amber: "bg-amber-50 border-amber-200",
                                 rose: "bg-rose-50 border-rose-200"
                             };
 
-                            const TextColors = {
+                            const TextColors = isDark ? {
+                                emerald: "text-emerald-400",
+                                rose: "text-rose-400"
+                            } : {
                                 emerald: "text-emerald-800",
-                                green: "text-green-800",
-                                amber: "text-amber-800",
                                 rose: "text-rose-800"
                             };
 
                             const BadgeColors = {
-                                emerald: "bg-emerald-500",
-                                green: "bg-green-500",
-                                amber: "bg-amber-500",
-                                rose: "bg-rose-500"
+                                emerald: "bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.4)]",
+                                rose: "bg-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.4)]"
                             };
 
                             return (
-                                <div className={`rounded-3xl border ${BgColors[colorClass as keyof typeof BgColors]} p-8 text-center shadow-lg`}>
-                                    <div className={`mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full ${BadgeColors[colorClass as keyof typeof BadgeColors]} text-white shadow-xl`}>
-                                        {Icons.trophy}
+                                <div className={`rounded-3xl border ${BgColors[colorClass as keyof typeof BgColors]} p-8 text-center shadow-2xl backdrop-blur-md`}>
+                                    <div className={`mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-2xl ${BadgeColors[colorClass as keyof typeof BadgeColors]} text-white transform rotate-3`}>
+                                        {won ? Icons.trophy : Icons.eyeOff}
                                     </div>
-                                    <h3 className="text-3xl font-black text-gray-900 mb-1">{badgeText}</h3>
-                                    <p className={`text-lg ${TextColors[colorClass as keyof typeof TextColors]} font-bold mb-6`}>
+                                    <h3 className={`text-4xl font-black uppercase tracking-tighter mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{badgeText}</h3>
+                                    <p className={`text-xl ${TextColors[colorClass as keyof typeof TextColors]} font-bold mb-8 uppercase tracking-widest`}>
                                         {desc}
                                     </p>
 
-                                    <div className="flex justify-center gap-12 max-w-sm mx-auto bg-white/50 backdrop-blur-sm p-4 rounded-2xl border border-white shadow-inner">
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] uppercase font-black text-gray-400 tracking-widest">You</span>
-                                            <span className="text-3xl font-black text-blue-600">{playerDist}</span>
+                                    {!won && (
+                                        <div className={`mb-8 p-6 rounded-2xl text-left max-w-2xl mx-auto border transition-colors ${isDark ? 'bg-slate-900/80 border-rose-500/20 shadow-inner text-slate-300' : 'bg-rose-50 border-rose-100 text-rose-900'}`}>
+                                            <h4 className={`text-sm font-black uppercase tracking-widest mb-3 flex items-center gap-2 ${isDark ? 'text-rose-400' : 'text-rose-600'}`}>
+                                                {Icons.lightbulb} Algorithm Principles Violated
+                                            </h4>
+                                            <p className="text-sm leading-relaxed mb-4">
+                                                Dijkstra's algorithm relies on the <strong className={isDark ? "text-emerald-400" : "text-emerald-700"}>Greedy Choice Property</strong>: at every step, we MUST choose the unvisited node with the absolute smallest current distance.
+                                            </p>
+                                            <p className="text-sm leading-relaxed">
+                                                By skipping a shorter connection, you lost the <strong className={isDark ? "text-emerald-400" : "text-emerald-700"}>Global Optimality</strong>. The algorithm ensures the shortest path precisely because it never relaxes a node unless it's the closest reachable one.
+                                            </p>
                                         </div>
-                                        <div className="w-px bg-gray-200"></div>
+                                    )}
+
+                                    <div className={`flex justify-center gap-12 max-w-sm mx-auto p-6 rounded-2xl border backdrop-blur-sm shadow-inner transition-colors ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-white/50 border-white'}`}>
                                         <div className="flex flex-col">
-                                            <span className="text-[10px] uppercase font-black text-gray-400 tracking-widest">Goal</span>
-                                            <span className={`text-3xl font-black ${colorClass === 'emerald' ? 'text-emerald-600' : 'text-emerald-500'}`}>
+                                            <span className={`text-[10px] uppercase font-black tracking-[0.2em] mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>YOUR COST</span>
+                                            <span className={`text-4xl font-black ${won ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : (isDark ? 'text-rose-400' : 'text-rose-600')}`}>{playerDist}</span>
+                                        </div>
+                                        <div className={`w-px ${isDark ? 'bg-slate-800' : 'bg-gray-200'}`}></div>
+                                        <div className="flex flex-col">
+                                            <span className={`text-[10px] uppercase font-black tracking-[0.2em] mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>OPTIMAL</span>
+                                            <span className={`text-4xl font-black ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
                                                 {optimalDist}
                                             </span>
                                         </div>
@@ -1312,34 +1656,34 @@ export default function LearnPage() {
 
                         <div className="grid gap-6 md:grid-cols-2">
                             {/* Your Path */}
-                            <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-6 flex flex-col">
-                                <h4 className="flex items-center gap-2 font-black text-blue-900 mb-4 text-sm">
+                            <div className={`rounded-2xl border transition-colors p-6 flex flex-col ${isDark ? 'bg-slate-900/50 border-blue-500/20 text-slate-100 shadow-2xl' : 'border-blue-100 bg-blue-50/50 text-gray-900'}`}>
+                                <h4 className={`flex items-center gap-2 font-black mb-4 text-sm tracking-widest ${isDark ? 'text-blue-400' : 'text-blue-900'}`}>
                                     {Icons.route} YOUR PATH
                                 </h4>
                                 <div className="flex flex-wrap gap-2">
                                     {playerPath.map((id, idx) => (
                                         <div key={id} className="flex items-center gap-2">
-                                            <span className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm">
+                                            <span className={`px-3 py-1.5 rounded-lg text-xs font-black shadow-lg ${isDark ? 'bg-blue-600 text-white' : 'bg-blue-600 text-white'}`}>
                                                 {level.graph.nodes.find(n => n.id === id)?.name}
                                             </span>
-                                            {idx < playerPath.length - 1 && <span className="text-blue-300">{Icons.arrowRight}</span>}
+                                            {idx < playerPath.length - 1 && <span className={`${isDark ? 'text-blue-500/50' : 'text-blue-300'}`}>{Icons.arrowRight}</span>}
                                         </div>
                                     ))}
                                 </div>
                             </div>
 
                             {/* Optimal Path */}
-                            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-6 flex flex-col">
-                                <h4 className="flex items-center gap-2 font-black text-emerald-900 mb-4 text-sm">
+                            <div className={`rounded-2xl border transition-colors p-6 flex flex-col ${isDark ? 'bg-slate-900/50 border-emerald-500/20 text-slate-100 shadow-2xl' : 'border-emerald-100 bg-emerald-50/50 text-gray-900'}`}>
+                                <h4 className={`flex items-center gap-2 font-black mb-4 text-sm tracking-widest ${isDark ? 'text-emerald-400' : 'text-emerald-900'}`}>
                                     {Icons.check} OPTIMAL PATH
                                 </h4>
                                 <div className="flex flex-wrap gap-2">
                                     {path.map((id, idx) => (
                                         <div key={id} className="flex items-center gap-2">
-                                            <span className="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm">
+                                            <span className={`px-3 py-1.5 rounded-lg text-xs font-black shadow-lg ${isDark ? 'bg-emerald-600 text-white' : 'bg-emerald-600 text-white'}`}>
                                                 {level.graph.nodes.find(n => n.id === id)?.name}
                                             </span>
-                                            {idx < path.length - 1 && <span className="text-emerald-500/50 italic text-[10px]">next</span>}
+                                            {idx < path.length - 1 && <span className={`${isDark ? 'text-emerald-500/30' : 'text-emerald-500/50'} italic text-[10px]`}>next</span>}
                                         </div>
                                     ))}
                                 </div>
@@ -1347,7 +1691,7 @@ export default function LearnPage() {
                         </div>
 
                         {/* Recap Graph */}
-                        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl min-h-[500px]">
+                        <div className={`overflow-hidden rounded-2xl border transition-colors shadow-2xl min-h-[500px] ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'}`}>
                             <GraphVisualization
                                 graph={level.graph}
                                 currentStep={null}
@@ -1357,17 +1701,18 @@ export default function LearnPage() {
                                 gameStatus="complete"
                                 startNode={startNode}
                                 endNode={endNode}
+                                isDark={isDark}
                             />
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="flex flex-wrap justify-center gap-4 py-6">
+                        <div className="flex flex-wrap justify-center gap-6 py-12">
                             <button
                                 onClick={resetLevel}
-                                className="flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-8 py-4 font-black text-gray-700 transition-all hover:bg-gray-50 active:scale-95 shadow-sm"
+                                className={`flex items-center gap-2 rounded-2xl px-10 py-5 font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg ${isDark ? 'bg-slate-800 text-white hover:bg-slate-700' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
                             >
                                 {Icons.refresh}
-                                Play Again
+                                Retry Mission
                             </button>
                             {currentLevel < 3 ? (
                                 <button
@@ -1391,29 +1736,8 @@ export default function LearnPage() {
                 )}
             </main>
 
-            {/* Progress Bar */}
-            <div className="fixed bottom-0 left-0 right-0 border-t border-gray-200 bg-white">
-                <div className="mx-auto max-w-7xl px-6 py-3">
-                    <div className="flex items-center justify-between text-sm text-gray-500">
-                        <span>Learning Progress</span>
-                        <span>Level {currentLevel} of 3</span>
-                    </div>
-                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-200">
-                        <div
-                            className="h-full bg-gray-900 transition-all duration-500"
-                            style={{
-                                width: `${gameState === "complete"
-                                    ? (currentLevel / 3) * 100
-                                    : ((currentLevel - 1) / 3) * 100 +
-                                    (gameState === "playing"
-                                        ? (playerPath.length / level.graph.nodes.length) * (100 / 3)
-                                        : 0)
-                                    }%`,
-                            }}
-                        />
-                    </div>
-                </div>
-            </div>
+            {/* Progress Bar - Removed as requested */}
+            {/* <div className="fixed bottom-0 left-0 right-0 border-t border-gray-200 bg-white"> ... </div> */}
         </div>
     );
 }
