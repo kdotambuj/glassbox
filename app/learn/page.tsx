@@ -413,6 +413,51 @@ interface GraphVisualizationProps {
     isDark?: boolean;
 }
 
+// Memoized India Map Component for Performance
+const IndiaMap = React.memo(({ mapPaths, stateColors, isDark }: { mapPaths: string[], stateColors: string[], isDark: boolean }) => {
+    return (
+        <g>
+            {/* Shadow layer */}
+            <g transform="translate(2, 2)" opacity="0.05">
+                {mapPaths.map((pathD, idx) => (
+                    <path
+                        key={`shadow-${idx}`}
+                        d={pathD}
+                        fill="#000"
+                        stroke="none"
+                    />
+                ))}
+            </g>
+
+            {/* Main map with muted state boundaries */}
+            {mapPaths.map((pathD, idx) => (
+                <path
+                    key={`state-${idx}`}
+                    d={pathD}
+                    fill={stateColors[idx % stateColors.length]}
+                    stroke={isDark ? "#334155" : "#d1d5db"}
+                    strokeWidth="0.5"
+                    className="transition-all duration-200"
+                />
+            ))}
+
+            {/* Outer border */}
+            {mapPaths.map((pathD, idx) => (
+                <path
+                    key={`border-${idx}`}
+                    d={pathD}
+                    fill="none"
+                    stroke="#9ca3af"
+                    strokeWidth="0.8"
+                    opacity="0.4"
+                />
+            ))}
+        </g>
+    );
+});
+
+IndiaMap.displayName = "IndiaMap";
+
 // Graph Visualization Component
 function GraphVisualization({
     graph,
@@ -428,17 +473,23 @@ function GraphVisualization({
 }: GraphVisualizationProps) {
     const [geoData, setGeoData] = useState<GeoJSON.FeatureCollection | null>(null);
     const [mapPaths, setMapPaths] = useState<string[]>([]);
+    const [zoom, setZoom] = useState(1);
+    const [offset, setOffset] = useState({ x: 0, y: 0 });
+    const isDragging = useRef(false);
+    const lastPos = useRef({ x: 0, y: 0 });
 
     const svgWidth = 680;
     const svgHeight = level === 3 ? 580 : 450;
 
-    // Create D3 projection for India
-    const getProjection = useCallback(() => {
+    // Create D3 projection for India once
+    const projection = React.useMemo(() => {
         return d3.geoMercator()
             .center([82, 22])
             .scale(850)
             .translate([svgWidth / 2, svgHeight / 2]);
     }, [svgWidth, svgHeight]);
+
+    const getProjection = useCallback(() => projection, [projection]);
 
     // Load GeoJSON data for Level 3
     useEffect(() => {
@@ -466,10 +517,9 @@ function GraphVisualization({
         setMapPaths(paths);
     }, [geoData, level, getProjection]);
 
-    // Get node coordinates - use D3 projection for Level 3, otherwise use static coords
+    // Get node coordinates - use memoized projection for Level 3
     const getNodeCoords = useCallback((nodeId: string): { x: number; y: number } => {
         if (level === 3 && indiaCityCoords[nodeId]) {
-            const projection = getProjection();
             const coords = projection([indiaCityCoords[nodeId].lng, indiaCityCoords[nodeId].lat]);
             if (coords) {
                 return { x: coords[0], y: coords[1] };
@@ -478,7 +528,7 @@ function GraphVisualization({
         // Fallback to static coordinates for levels 1 & 2
         const node = graph.nodes.find(n => n.id === nodeId);
         return node ? { x: node.x, y: node.y } : { x: 0, y: 0 };
-    }, [level, graph.nodes, getProjection]);
+    }, [level, graph.nodes, projection]);
 
     const getNodeColor = (nodeId: string) => {
         if (gameStatus === "selecting_start") {
@@ -597,268 +647,275 @@ function GraphVisualization({
 
     return (
         <div className={`relative w-full h-full overflow-hidden rounded-xl border transition-colors duration-500 ${isDark ? 'bg-slate-900 border-slate-700 shadow-2xl' : 'bg-white border-gray-200 shadow-sm'} min-h-[400px]`}>
+            {/* Zoom Controls for Level 3 */}
+            {level === 3 && (
+                <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
+                    <button
+                        onClick={() => setZoom(prev => Math.min(prev + 0.5, 4))}
+                        className={`p-2 rounded-lg shadow-lg border transition-all ${isDark ? 'bg-slate-800 border-slate-700 text-emerald-400 hover:bg-slate-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+                    >
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                    </button>
+                    <button
+                        onClick={() => {
+                            setZoom(1);
+                            setOffset({ x: 0, y: 0 });
+                        }}
+                        className={`p-2 rounded-lg shadow-lg border transition-all ${isDark ? 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+                    >
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4h16v16H4z" /></svg>
+                    </button>
+                    <button
+                        onClick={() => setZoom(prev => Math.max(prev - 0.5, 0.5))}
+                        className={`p-2 rounded-lg shadow-lg border transition-all ${isDark ? 'bg-slate-800 border-slate-700 text-rose-400 hover:bg-slate-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+                    >
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>
+                    </button>
+                </div>
+            )}
+
             <svg
                 viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-                className="w-full h-full"
+                className={`w-full h-full ${level === 3 ? 'cursor-grab active:cursor-grabbing' : ''}`}
                 preserveAspectRatio="xMidYMid meet"
+                onMouseDown={(e) => {
+                    if (level !== 3) return;
+                    isDragging.current = true;
+                    lastPos.current = { x: e.clientX, y: e.clientY };
+                }}
+                onMouseMove={(e) => {
+                    if (!isDragging.current || level !== 3) return;
+                    const dx = (e.clientX - lastPos.current.x) / zoom;
+                    const dy = (e.clientY - lastPos.current.y) / zoom;
+                    setOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+                    lastPos.current = { x: e.clientX, y: e.clientY };
+                }}
+                onMouseUp={() => isDragging.current = false}
+                onMouseLeave={() => isDragging.current = false}
             >
-                {/* Grid Background */}
-                <defs>
-                    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke={isDark ? "#1e293b" : "#f3f4f6"} strokeWidth="1" />
-                    </pattern>
-                    {/* Gradient for India map */}
-                    <linearGradient id="indiaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor={isDark ? "#1e293b" : "#f0fdf4"} />
-                        <stop offset="100%" stopColor={isDark ? "#0f172a" : "#dcfce7"} />
-                    </linearGradient>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#grid)" />
+                <g transform={`scale(${zoom}) translate(${offset.x}, ${offset.y})`} style={{ transformOrigin: 'center' }}>
+                    {/* Grid Background */}
+                    <defs>
+                        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                            <path d="M 40 0 L 0 0 0 40" fill="none" stroke={isDark ? "#1e293b" : "#f3f4f6"} strokeWidth="1" />
+                        </pattern>
+                        {/* Gradient for India map */}
+                        <linearGradient id="indiaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor={isDark ? "#1e293b" : "#f0fdf4"} />
+                            <stop offset="100%" stopColor={isDark ? "#0f172a" : "#dcfce7"} />
+                        </linearGradient>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#grid)" x={-svgWidth * 2} y={-svgHeight * 2} width={svgWidth * 5} height={svgHeight * 5} />
 
-                {/* Loading state for Level 3 */}
-                {level === 3 && isMapLoading && (
-                    <g>
-                        <rect x={svgWidth / 2 - 100} y={svgHeight / 2 - 30} width={200} height={60} rx={8} fill={isDark ? "#1e293b" : "#f9fafb"} stroke={isDark ? "#334155" : "#e5e7eb"} strokeWidth={1} />
-                        <text x={svgWidth / 2} y={svgHeight / 2 + 5} textAnchor="middle" className={`${isDark ? 'fill-slate-400' : 'fill-gray-500'} text-sm font-medium`}>
-                            Map is loading...
-                        </text>
-                    </g>
-                )}
-
-                {/* India Map for Level 3 - D3 GeoJSON rendering */}
-                {level === 3 && !isMapLoading && (
-                    <g>
-                        {/* Shadow layer */}
-                        <g transform="translate(2, 2)" opacity="0.05">
-                            {mapPaths.map((pathD, idx) => (
-                                <path
-                                    key={`shadow-${idx}`}
-                                    d={pathD}
-                                    fill="#000"
-                                    stroke="none"
-                                />
-                            ))}
-                        </g>
-
-                        {/* Main map with muted state boundaries */}
-                        {mapPaths.map((pathD, idx) => (
-                            <path
-                                key={`state-${idx}`}
-                                d={pathD}
-                                fill={stateColors[idx % stateColors.length]}
-                                stroke={isDark ? "#334155" : "#d1d5db"}
-                                strokeWidth="0.5"
-                                className="transition-all duration-200"
-                            />
-                        ))}
-
-                        {/* Outer border */}
-                        {mapPaths.map((pathD, idx) => (
-                            <path
-                                key={`border-${idx}`}
-                                d={pathD}
-                                fill="none"
-                                stroke="#9ca3af"
-                                strokeWidth="0.8"
-                                opacity="0.4"
-                            />
-                        ))}
-                    </g>
-                )}
-
-                {/* Edges */}
-                {(!isMapLoading || level !== 3) && graph.edges.map((edge, idx) => {
-                    const fromCoords = level === 3 ? getNodeCoords(edge.from) : graph.nodes.find((n) => n.id === edge.from)!;
-                    const toCoords = level === 3 ? getNodeCoords(edge.to) : graph.nodes.find((n) => n.id === edge.to)!;
-                    const midX = (fromCoords.x + toCoords.x) / 2;
-                    const midY = (fromCoords.y + toCoords.y) / 2;
-
-                    return (
-                        <g key={idx}>
-                            <line
-                                x1={fromCoords.x}
-                                y1={fromCoords.y}
-                                x2={toCoords.x}
-                                y2={toCoords.y}
-                                className={`${getEdgeColor(edge.from, edge.to)} transition-all duration-300`}
-                                strokeWidth={getEdgeWidth(edge.from, edge.to)}
-                            />
-                            <rect
-                                x={midX - 18}
-                                y={midY - 10}
-                                width={36}
-                                height={20}
-                                rx={4}
-                                className={`${isDark ? 'fill-slate-800 stroke-slate-700' : 'fill-white stroke-gray-200'}`}
-                                strokeWidth={1}
-                            />
-                            <text
-                                x={midX}
-                                y={midY + 5}
-                                textAnchor="middle"
-                                className={`${isDark ? 'fill-slate-300' : 'fill-gray-600'} text-xs font-medium`}
-                            >
-                                {edge.weight}
+                    {/* Loading state for Level 3 */}
+                    {level === 3 && isMapLoading && (
+                        <g>
+                            <rect x={svgWidth / 2 - 100} y={svgHeight / 2 - 30} width={200} height={60} rx={8} fill={isDark ? "#1e293b" : "#f9fafb"} stroke={isDark ? "#334155" : "#e5e7eb"} strokeWidth={1} />
+                            <text x={svgWidth / 2} y={svgHeight / 2 + 5} textAnchor="middle" className={`${isDark ? 'fill-slate-400' : 'fill-gray-500'} text-sm font-medium`}>
+                                Map is loading...
                             </text>
                         </g>
-                    );
-                })}
+                    )}
 
-                {/* Nodes */}
-                {(!isMapLoading || level !== 3) && graph.nodes.map((node) => {
-                    const coords = level === 3 ? getNodeCoords(node.id) : { x: node.x, y: node.y };
-                    const distance = currentStep?.distances[node.id];
-                    const nodeRadius = level === 3 ? 8 : 20;
-                    const labelPos = level === 3 ? labelPositions[node.id] : null;
+                    {/* India Map for Level 3 - D3 GeoJSON rendering */}
+                    {level === 3 && !isMapLoading && (
+                        <IndiaMap mapPaths={mapPaths} stateColors={stateColors} isDark={isDark} />
+                    )}
 
-                    return (
-                        <g key={node.id}>
-                            {/* Leader line for Level 3 labels */}
-                            {level === 3 && labelPos && (
+                    {/* Edges */}
+                    {(!isMapLoading || level !== 3) && graph.edges.map((edge, idx) => {
+                        const fromCoords = level === 3 ? getNodeCoords(edge.from) : graph.nodes.find((n) => n.id === edge.from)!;
+                        const toCoords = level === 3 ? getNodeCoords(edge.to) : graph.nodes.find((n) => n.id === edge.to)!;
+                        const midX = (fromCoords.x + toCoords.x) / 2;
+                        const midY = (fromCoords.y + toCoords.y) / 2;
+
+                        return (
+                            <g key={idx}>
                                 <line
-                                    x1={coords.x}
-                                    y1={coords.y}
-                                    x2={coords.x + labelPos.labelX * 0.7}
-                                    y2={coords.y + labelPos.labelY * 0.7}
-                                    stroke="#60a5fa"
-                                    strokeWidth={1}
-                                    opacity={0.8}
+                                    x1={fromCoords.x}
+                                    y1={fromCoords.y}
+                                    x2={toCoords.x}
+                                    y2={toCoords.y}
+                                    className={`${getEdgeColor(edge.from, edge.to)} transition-all duration-300`}
+                                    strokeWidth={getEdgeWidth(edge.from, edge.to)}
                                 />
-                            )}
-                            {/* Node shadow */}
-                            <circle
-                                cx={coords.x + 1}
-                                cy={coords.y + 1}
-                                r={nodeRadius}
-                                className={`${isDark ? 'fill-black' : 'fill-gray-300'} opacity-30`}
-                            />
-                            {/* Node circle */}
-                            <circle
-                                cx={coords.x}
-                                cy={coords.y}
-                                r={nodeRadius}
-                                className={`${getNodeColor(node.id)} ${getNodeStroke(node.id)} transition-all duration-300`}
-                                strokeWidth={node.id === startNode || node.id === endNode ? 3 : 2}
-                                onClick={() => onNodeClick?.(node.id)}
-                            />
-                            {/* Distance label inside node for Level 3 */}
-                            {level === 3 && currentStep && (
+                                <rect
+                                    x={midX - 18}
+                                    y={midY - 10}
+                                    width={36}
+                                    height={20}
+                                    rx={4}
+                                    className={`${isDark ? 'fill-slate-800 stroke-slate-700' : 'fill-white stroke-gray-200'}`}
+                                    strokeWidth={1}
+                                />
                                 <text
-                                    x={coords.x}
-                                    y={coords.y + 1}
+                                    x={midX}
+                                    y={midY + 5}
                                     textAnchor="middle"
-                                    className="fill-white font-bold"
-                                    style={{ fontSize: '3px' }}
+                                    className={`${isDark ? 'fill-slate-300' : 'fill-gray-600'} text-xs font-medium`}
                                 >
-                                    {distance === Infinity ? "∞" : distance}
+                                    {edge.weight}
                                 </text>
-                            )}
-                            {/* Node label for Level 1 & 2 (above node) */}
-                            {level !== 3 && (
-                                <text
-                                    x={coords.x}
-                                    y={coords.y - nodeRadius - 6}
-                                    textAnchor="middle"
-                                    className={`${isDark ? 'fill-slate-300' : 'fill-gray-700'} text-xs font-semibold`}
-                                >
-                                    {node.name}
-                                </text>
-                            )}
-                            {/* External label with leader line for Level 3 */}
-                            {level === 3 && labelPos && (
-                                <g>
-                                    <rect
-                                        x={labelPos.anchor === 'end' ? coords.x + labelPos.labelX - 58 : coords.x + labelPos.labelX - 2}
-                                        y={coords.y + labelPos.labelY - 10}
-                                        width={60}
-                                        height={18}
-                                        rx={3}
-                                        fill={isDark ? "#1e293b" : "white"}
-                                        stroke={isDark ? "#334155" : "#e5e7eb"}
+                            </g>
+                        );
+                    })}
+
+                    {/* Nodes */}
+                    {(!isMapLoading || level !== 3) && graph.nodes.map((node) => {
+                        const coords = level === 3 ? getNodeCoords(node.id) : { x: node.x, y: node.y };
+                        const distance = currentStep?.distances[node.id];
+                        const nodeRadius = level === 3 ? 8 : 20;
+                        const labelPos = level === 3 ? labelPositions[node.id] : null;
+
+                        return (
+                            <g key={node.id}>
+                                {/* Leader line for Level 3 labels */}
+                                {level === 3 && labelPos && (
+                                    <line
+                                        x1={coords.x}
+                                        y1={coords.y}
+                                        x2={coords.x + labelPos.labelX * 0.7}
+                                        y2={coords.y + labelPos.labelY * 0.7}
+                                        stroke="#60a5fa"
                                         strokeWidth={1}
-                                        opacity={0.95}
+                                        opacity={0.8}
                                     />
+                                )}
+                                {/* Node shadow */}
+                                <circle
+                                    cx={coords.x + 1}
+                                    cy={coords.y + 1}
+                                    r={nodeRadius}
+                                    className={`${isDark ? 'fill-black' : 'fill-gray-300'} opacity-30`}
+                                />
+                                {/* Node circle */}
+                                <circle
+                                    cx={coords.x}
+                                    cy={coords.y}
+                                    r={nodeRadius}
+                                    className={`${getNodeColor(node.id)} ${getNodeStroke(node.id)} transition-all duration-300`}
+                                    strokeWidth={node.id === startNode || node.id === endNode ? 3 : 2}
+                                    onClick={() => onNodeClick?.(node.id)}
+                                />
+                                {/* Distance label inside node for Level 3 */}
+                                {level === 3 && currentStep && (
                                     <text
-                                        x={labelPos.anchor === 'end' ? coords.x + labelPos.labelX - 5 : coords.x + labelPos.labelX + 5}
-                                        y={coords.y + labelPos.labelY + 3}
-                                        textAnchor={labelPos.anchor}
-                                        className={isDark ? "fill-slate-200 font-semibold" : "fill-gray-700 font-semibold"}
-                                        style={{ fontSize: '9px' }}
+                                        x={coords.x}
+                                        y={coords.y + 1}
+                                        textAnchor="middle"
+                                        className="fill-white font-bold"
+                                        style={{ fontSize: '3px' }}
+                                    >
+                                        {distance === Infinity ? "∞" : distance}
+                                    </text>
+                                )}
+                                {/* Node label for Level 1 & 2 (above node) */}
+                                {level !== 3 && (
+                                    <text
+                                        x={coords.x}
+                                        y={coords.y - nodeRadius - 6}
+                                        textAnchor="middle"
+                                        className={`${isDark ? 'fill-slate-300' : 'fill-gray-700'} text-xs font-semibold`}
                                     >
                                         {node.name}
                                     </text>
-                                    {/* Start/End badge */}
-                                    {(node.id === startNode || node.id === endNode) && (
+                                )}
+                                {/* External label with leader line for Level 3 */}
+                                {level === 3 && labelPos && (
+                                    <g>
+                                        <rect
+                                            x={labelPos.anchor === 'end' ? coords.x + labelPos.labelX - 58 : coords.x + labelPos.labelX - 2}
+                                            y={coords.y + labelPos.labelY - 10}
+                                            width={60}
+                                            height={18}
+                                            rx={3}
+                                            fill={isDark ? "#1e293b" : "white"}
+                                            stroke={isDark ? "#334155" : "#e5e7eb"}
+                                            strokeWidth={1}
+                                            opacity={0.95}
+                                        />
                                         <text
-                                            x={labelPos.anchor === 'end' ? coords.x + labelPos.labelX - 55 : coords.x + labelPos.labelX + 55}
+                                            x={labelPos.anchor === 'end' ? coords.x + labelPos.labelX - 5 : coords.x + labelPos.labelX + 5}
                                             y={coords.y + labelPos.labelY + 3}
-                                            textAnchor={labelPos.anchor === 'end' ? 'start' : 'end'}
-                                            className={node.id === startNode ? 'fill-emerald-600' : 'fill-rose-600'}
-                                            style={{ fontSize: '7px', fontWeight: 'bold' }}
+                                            textAnchor={labelPos.anchor}
+                                            className={isDark ? "fill-slate-200 font-semibold" : "fill-gray-700 font-semibold"}
+                                            style={{ fontSize: '9px' }}
                                         >
-                                            {node.id === startNode ? '●' : '◆'}
+                                            {node.name}
                                         </text>
-                                    )}
-                                </g>
-                            )}
-                            {/* Distance label for Level 1 & 2 */}
-                            {level !== 3 && currentStep && (
-                                <text
-                                    x={coords.x}
-                                    y={coords.y + 4}
-                                    textAnchor="middle"
-                                    className="fill-white text-xs font-bold"
-                                >
-                                    {distance === Infinity ? "∞" : distance}
-                                </text>
-                            )}
-                            {/* Start indicator */}
-                            {node.id === startNode && (
-                                <g>
-                                    <rect
-                                        x={coords.x - 18}
-                                        y={coords.y + nodeRadius + 3}
-                                        width={36}
-                                        height={14}
-                                        rx={3}
-                                        className="fill-emerald-500 stroke-emerald-600"
-                                        strokeWidth={1}
-                                    />
+                                        {/* Start/End badge */}
+                                        {(node.id === startNode || node.id === endNode) && (
+                                            <text
+                                                x={labelPos.anchor === 'end' ? coords.x + labelPos.labelX - 55 : coords.x + labelPos.labelX + 55}
+                                                y={coords.y + labelPos.labelY + 3}
+                                                textAnchor={labelPos.anchor === 'end' ? 'start' : 'end'}
+                                                className={node.id === startNode ? 'fill-emerald-600' : 'fill-rose-600'}
+                                                style={{ fontSize: '7px', fontWeight: 'bold' }}
+                                            >
+                                                {node.id === startNode ? '●' : '◆'}
+                                            </text>
+                                        )}
+                                    </g>
+                                )}
+                                {/* Distance label for Level 1 & 2 */}
+                                {level !== 3 && currentStep && (
                                     <text
                                         x={coords.x}
-                                        y={coords.y + nodeRadius + 13}
+                                        y={coords.y + 4}
                                         textAnchor="middle"
-                                        className="fill-white text-[9px] font-bold"
+                                        className="fill-white text-xs font-bold"
                                     >
-                                        START
+                                        {distance === Infinity ? "∞" : distance}
                                     </text>
-                                </g>
-                            )}
-                            {/* End indicator */}
-                            {node.id === endNode && (
-                                <g>
-                                    <rect
-                                        x={coords.x - 14}
-                                        y={coords.y + nodeRadius + 3}
-                                        width={28}
-                                        height={14}
-                                        rx={3}
-                                        className="fill-rose-500 stroke-rose-600"
-                                        strokeWidth={1}
-                                    />
-                                    <text
-                                        x={coords.x}
-                                        y={coords.y + nodeRadius + 13}
-                                        textAnchor="middle"
-                                        className="fill-white text-[9px] font-bold"
-                                    >
-                                        END
-                                    </text>
-                                </g>
-                            )}
-                        </g>
-                    );
-                })}
+                                )}
+                                {/* Start indicator */}
+                                {node.id === startNode && (
+                                    <g>
+                                        <rect
+                                            x={coords.x - 18}
+                                            y={coords.y + nodeRadius + 3}
+                                            width={36}
+                                            height={14}
+                                            rx={3}
+                                            className="fill-emerald-500 stroke-emerald-600"
+                                            strokeWidth={1}
+                                        />
+                                        <text
+                                            x={coords.x}
+                                            y={coords.y + nodeRadius + 13}
+                                            textAnchor="middle"
+                                            className="fill-white text-[9px] font-bold"
+                                        >
+                                            START
+                                        </text>
+                                    </g>
+                                )}
+                                {/* End indicator */}
+                                {node.id === endNode && (
+                                    <g>
+                                        <rect
+                                            x={coords.x - 14}
+                                            y={coords.y + nodeRadius + 3}
+                                            width={28}
+                                            height={14}
+                                            rx={3}
+                                            className="fill-rose-500 stroke-rose-600"
+                                            strokeWidth={1}
+                                        />
+                                        <text
+                                            x={coords.x}
+                                            y={coords.y + nodeRadius + 13}
+                                            textAnchor="middle"
+                                            className="fill-white text-[9px] font-bold"
+                                        >
+                                            END
+                                        </text>
+                                    </g>
+                                )}
+                            </g>
+                        );
+                    })}
+                </g>
             </svg>
         </div>
     );
@@ -1238,9 +1295,8 @@ export default function LearnPage() {
                             <span className="font-medium">Back to Home</span>
                         </Link>
                         <div className="flex items-center gap-4">
-                            <h1 className={`text-2xl font-black italic tracking-tight font-serif ${isDark ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]' : 'text-slate-900'}`}>
-                                <span className="opacity-50 mr-2">LEVEL {level.id}</span>
-                                {level.title.split(': ')[1].toUpperCase()}
+                            <h1 className={`text-3xl font-bold ${isDark ? 'text-emerald-400' : 'text-slate-900'}`}>
+                                {level.title.split(': ')[1]}
                             </h1>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1301,7 +1357,7 @@ export default function LearnPage() {
                             transition={{ delay: 0.3 }}
                             className="mb-10 text-center"
                         >
-                            <h2 className={`text-4xl md:text-5xl font-black italic tracking-tighter ${isDark ? 'text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-500' : 'text-slate-900'}`}>
+                            <h2 className={`text-4xl md:text-5xl font-black italic tracking-tighter px-4 py-2 overflow-visible ${isDark ? 'text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-500' : 'text-slate-900'}`}>
                                 Pathfinding Odyssey
                             </h2>
                             <div className={`h-1.5 w-24 mx-auto mt-4 rounded-full ${isDark ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-slate-900'}`}></div>
@@ -1428,7 +1484,7 @@ export default function LearnPage() {
                         </div>
 
                         {/* Side Panel */}
-                        <div className="overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+                        <div className="overflow-y-auto space-y-6 pt-4 pr-2 custom-scrollbar">
                             {/* Instruction Component - Enhanced Floating and Visibility */}
                             <motion.div
                                 animate={{
@@ -1438,7 +1494,7 @@ export default function LearnPage() {
                                         : ["0 4px 20px rgba(79,70,229,0.1)", "0 10px 40px rgba(79,70,229,0.3)", "0 4px 20px rgba(79,70,229,0.1)"]
                                 }}
                                 transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                                className={`p-6 rounded-2xl border-2 relative overflow-hidden transition-all duration-500 ${isDark ? 'bg-slate-900 border-emerald-500/50 text-white shadow-emerald-500/20' : 'bg-gradient-to-br from-indigo-600 to-purple-800 text-white border-white/20'}`}
+                                className={`mt-6 p-6 rounded-2xl border-2 relative overflow-hidden transition-all duration-500 ${isDark ? 'bg-slate-900 border-emerald-500/50 text-white shadow-emerald-500/20' : 'bg-gradient-to-br from-indigo-600 to-purple-800 text-white border-white/20'}`}
                             >
                                 <div className={`absolute -right-4 -top-4 h-28 w-28 rounded-full blur-3xl transition-colors ${isDark ? 'bg-emerald-400/20' : 'bg-white/20'}`}></div>
                                 <div className="flex items-center gap-4 mb-3 relative z-10">
@@ -1528,67 +1584,68 @@ export default function LearnPage() {
                     <div className="flex-1 overflow-y-auto pr-2 animate-in fade-in zoom-in duration-500 flex flex-col gap-6 pb-28">
                         {(() => {
                             const optimalDist = currentStep.distances[endNode!];
-                            const ratio = playerDist / optimalDist;
-                            let colorClass = "emerald";
-                            let badgeText = "God Tier! Absolute Perfection.";
-                            let desc = "You found the absolute shortest path possible. Your efficiency is unmatched!";
+                            const won = playerDist === optimalDist;
 
-                            if (ratio === 1) {
-                                // Default
-                            } else if (ratio <= 1.1) {
-                                colorClass = "green";
-                                badgeText = "Excellent Performance!";
-                                desc = "You were incredibly close to the optimal path. A few more tries and you'll hit perfection.";
-                            } else if (ratio <= 1.3) {
-                                colorClass = "amber";
-                                badgeText = "Good Effort!";
-                                desc = "A decent path, but there were slightly more efficient turns you could have taken.";
-                            } else {
-                                colorClass = "rose";
-                                badgeText = "Keep Practicing!";
-                                desc = "You reached the destination, but there's a much shorter route waiting to be discovered.";
-                            }
+                            const colorClass = won ? "emerald" : "rose";
+                            const badgeText = won ? "MISSION SUCCESS" : "MISSION FAILED";
+                            const desc = won
+                                ? "You found the globally optimal path. Strategic efficiency achieved."
+                                : "You arrived, but your path was suboptimal. Efficiency targets were not met.";
 
-                            const BgColors = {
+                            const BgColors = isDark ? {
+                                emerald: "bg-emerald-500/10 border-emerald-500/30",
+                                rose: "bg-rose-500/10 border-rose-500/30"
+                            } : {
                                 emerald: "bg-emerald-50 border-emerald-200",
-                                green: "bg-green-50 border-green-200",
-                                amber: "bg-amber-50 border-amber-200",
                                 rose: "bg-rose-50 border-rose-200"
                             };
 
-                            const TextColors = {
+                            const TextColors = isDark ? {
+                                emerald: "text-emerald-400",
+                                rose: "text-rose-400"
+                            } : {
                                 emerald: "text-emerald-800",
-                                green: "text-green-800",
-                                amber: "text-amber-800",
                                 rose: "text-rose-800"
                             };
 
                             const BadgeColors = {
-                                emerald: "bg-emerald-500",
-                                green: "bg-green-500",
-                                amber: "bg-amber-500",
-                                rose: "bg-rose-500"
+                                emerald: "bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.4)]",
+                                rose: "bg-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.4)]"
                             };
 
                             return (
-                                <div className={`rounded-3xl border ${BgColors[colorClass as keyof typeof BgColors]} p-8 text-center shadow-lg`}>
-                                    <div className={`mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full ${BadgeColors[colorClass as keyof typeof BadgeColors]} text-white shadow-xl`}>
-                                        {Icons.trophy}
+                                <div className={`rounded-3xl border ${BgColors[colorClass as keyof typeof BgColors]} p-8 text-center shadow-2xl backdrop-blur-md`}>
+                                    <div className={`mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-2xl ${BadgeColors[colorClass as keyof typeof BadgeColors]} text-white transform rotate-3`}>
+                                        {won ? Icons.trophy : Icons.eyeOff}
                                     </div>
-                                    <h3 className="text-3xl font-black text-gray-900 mb-1">{badgeText}</h3>
-                                    <p className={`text-lg ${TextColors[colorClass as keyof typeof TextColors]} font-bold mb-6`}>
+                                    <h3 className={`text-4xl font-black uppercase tracking-tighter mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{badgeText}</h3>
+                                    <p className={`text-xl ${TextColors[colorClass as keyof typeof TextColors]} font-bold mb-8 uppercase tracking-widest`}>
                                         {desc}
                                     </p>
 
-                                    <div className="flex justify-center gap-12 max-w-sm mx-auto bg-white/50 backdrop-blur-sm p-4 rounded-2xl border border-white shadow-inner">
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] uppercase font-black text-gray-400 tracking-widest">You</span>
-                                            <span className="text-3xl font-black text-blue-600">{playerDist}</span>
+                                    {!won && (
+                                        <div className={`mb-8 p-6 rounded-2xl text-left max-w-2xl mx-auto border transition-colors ${isDark ? 'bg-slate-900/80 border-rose-500/20 shadow-inner text-slate-300' : 'bg-rose-50 border-rose-100 text-rose-900'}`}>
+                                            <h4 className={`text-sm font-black uppercase tracking-widest mb-3 flex items-center gap-2 ${isDark ? 'text-rose-400' : 'text-rose-600'}`}>
+                                                {Icons.lightbulb} Algorithm Principles Violated
+                                            </h4>
+                                            <p className="text-sm leading-relaxed mb-4">
+                                                Dijkstra's algorithm relies on the <strong className={isDark ? "text-emerald-400" : "text-emerald-700"}>Greedy Choice Property</strong>: at every step, we MUST choose the unvisited node with the absolute smallest current distance.
+                                            </p>
+                                            <p className="text-sm leading-relaxed">
+                                                By skipping a shorter connection, you lost the <strong className={isDark ? "text-emerald-400" : "text-emerald-700"}>Global Optimality</strong>. The algorithm ensures the shortest path precisely because it never relaxes a node unless it's the closest reachable one.
+                                            </p>
                                         </div>
-                                        <div className="w-px bg-gray-200"></div>
+                                    )}
+
+                                    <div className={`flex justify-center gap-12 max-w-sm mx-auto p-6 rounded-2xl border backdrop-blur-sm shadow-inner transition-colors ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-white/50 border-white'}`}>
                                         <div className="flex flex-col">
-                                            <span className="text-[10px] uppercase font-black text-gray-400 tracking-widest">Goal</span>
-                                            <span className={`text-3xl font-black ${colorClass === 'emerald' ? 'text-emerald-600' : 'text-emerald-500'}`}>
+                                            <span className={`text-[10px] uppercase font-black tracking-[0.2em] mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>YOUR COST</span>
+                                            <span className={`text-4xl font-black ${won ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : (isDark ? 'text-rose-400' : 'text-rose-600')}`}>{playerDist}</span>
+                                        </div>
+                                        <div className={`w-px ${isDark ? 'bg-slate-800' : 'bg-gray-200'}`}></div>
+                                        <div className="flex flex-col">
+                                            <span className={`text-[10px] uppercase font-black tracking-[0.2em] mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>OPTIMAL</span>
+                                            <span className={`text-4xl font-black ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
                                                 {optimalDist}
                                             </span>
                                         </div>
@@ -1599,34 +1656,34 @@ export default function LearnPage() {
 
                         <div className="grid gap-6 md:grid-cols-2">
                             {/* Your Path */}
-                            <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-6 flex flex-col">
-                                <h4 className="flex items-center gap-2 font-black text-blue-900 mb-4 text-sm">
+                            <div className={`rounded-2xl border transition-colors p-6 flex flex-col ${isDark ? 'bg-slate-900/50 border-blue-500/20 text-slate-100 shadow-2xl' : 'border-blue-100 bg-blue-50/50 text-gray-900'}`}>
+                                <h4 className={`flex items-center gap-2 font-black mb-4 text-sm tracking-widest ${isDark ? 'text-blue-400' : 'text-blue-900'}`}>
                                     {Icons.route} YOUR PATH
                                 </h4>
                                 <div className="flex flex-wrap gap-2">
                                     {playerPath.map((id, idx) => (
                                         <div key={id} className="flex items-center gap-2">
-                                            <span className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm">
+                                            <span className={`px-3 py-1.5 rounded-lg text-xs font-black shadow-lg ${isDark ? 'bg-blue-600 text-white' : 'bg-blue-600 text-white'}`}>
                                                 {level.graph.nodes.find(n => n.id === id)?.name}
                                             </span>
-                                            {idx < playerPath.length - 1 && <span className="text-blue-300">{Icons.arrowRight}</span>}
+                                            {idx < playerPath.length - 1 && <span className={`${isDark ? 'text-blue-500/50' : 'text-blue-300'}`}>{Icons.arrowRight}</span>}
                                         </div>
                                     ))}
                                 </div>
                             </div>
 
                             {/* Optimal Path */}
-                            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-6 flex flex-col">
-                                <h4 className="flex items-center gap-2 font-black text-emerald-900 mb-4 text-sm">
+                            <div className={`rounded-2xl border transition-colors p-6 flex flex-col ${isDark ? 'bg-slate-900/50 border-emerald-500/20 text-slate-100 shadow-2xl' : 'border-emerald-100 bg-emerald-50/50 text-gray-900'}`}>
+                                <h4 className={`flex items-center gap-2 font-black mb-4 text-sm tracking-widest ${isDark ? 'text-emerald-400' : 'text-emerald-900'}`}>
                                     {Icons.check} OPTIMAL PATH
                                 </h4>
                                 <div className="flex flex-wrap gap-2">
                                     {path.map((id, idx) => (
                                         <div key={id} className="flex items-center gap-2">
-                                            <span className="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm">
+                                            <span className={`px-3 py-1.5 rounded-lg text-xs font-black shadow-lg ${isDark ? 'bg-emerald-600 text-white' : 'bg-emerald-600 text-white'}`}>
                                                 {level.graph.nodes.find(n => n.id === id)?.name}
                                             </span>
-                                            {idx < path.length - 1 && <span className="text-emerald-500/50 italic text-[10px]">next</span>}
+                                            {idx < path.length - 1 && <span className={`${isDark ? 'text-emerald-500/30' : 'text-emerald-500/50'} italic text-[10px]`}>next</span>}
                                         </div>
                                     ))}
                                 </div>
@@ -1634,7 +1691,7 @@ export default function LearnPage() {
                         </div>
 
                         {/* Recap Graph */}
-                        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl min-h-[500px]">
+                        <div className={`overflow-hidden rounded-2xl border transition-colors shadow-2xl min-h-[500px] ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'}`}>
                             <GraphVisualization
                                 graph={level.graph}
                                 currentStep={null}
@@ -1644,17 +1701,18 @@ export default function LearnPage() {
                                 gameStatus="complete"
                                 startNode={startNode}
                                 endNode={endNode}
+                                isDark={isDark}
                             />
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="flex flex-wrap justify-center gap-4 py-6">
+                        <div className="flex flex-wrap justify-center gap-6 py-12">
                             <button
                                 onClick={resetLevel}
-                                className="flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-8 py-4 font-black text-gray-700 transition-all hover:bg-gray-50 active:scale-95 shadow-sm"
+                                className={`flex items-center gap-2 rounded-2xl px-10 py-5 font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg ${isDark ? 'bg-slate-800 text-white hover:bg-slate-700' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
                             >
                                 {Icons.refresh}
-                                Play Again
+                                Retry Mission
                             </button>
                             {currentLevel < 3 ? (
                                 <button
