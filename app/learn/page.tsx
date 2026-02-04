@@ -389,18 +389,30 @@ function IndiaSVGPaths({ fill, stroke }: { fill: string; stroke: string }) {
     );
 }
 
+interface GraphVisualizationProps {
+    graph: Graph;
+    currentStep: DijkstraStep | null;
+    path: string[];
+    level: number;
+    playerPath: string[];
+    onNodeClick?: (nodeId: string) => void;
+    gameStatus: string;
+    startNode: string | null;
+    endNode: string | null;
+}
+
 // Graph Visualization Component
 function GraphVisualization({
     graph,
     currentStep,
     path,
     level,
-}: {
-    graph: Graph;
-    currentStep: DijkstraStep | null;
-    path: string[];
-    level: number;
-}) {
+    playerPath,
+    onNodeClick,
+    gameStatus,
+    startNode,
+    endNode,
+}: GraphVisualizationProps) {
     const [geoData, setGeoData] = useState<GeoJSON.FeatureCollection | null>(null);
     const [mapPaths, setMapPaths] = useState<string[]>([]);
 
@@ -456,22 +468,57 @@ function GraphVisualization({
     }, [level, graph.nodes, getProjection]);
 
     const getNodeColor = (nodeId: string) => {
-        if (!currentStep) return "fill-gray-400";
+        if (gameStatus === "selecting_start") {
+            return nodeId === startNode ? "fill-emerald-500" : "fill-gray-100 hover:fill-emerald-100 cursor-pointer";
+        }
+        if (gameStatus === "selecting_end") {
+            if (nodeId === startNode) return "fill-emerald-500";
+            return nodeId === endNode ? "fill-rose-500" : "fill-gray-100 hover:fill-rose-100 cursor-pointer";
+        }
+
+        // Gameplay colors
+        if (nodeId === startNode) return "fill-emerald-500";
+        if (nodeId === endNode) return "fill-rose-500";
+        if (playerPath.includes(nodeId)) return "fill-blue-500";
+
+        const lastNode = playerPath[playerPath.length - 1];
+        const isNeighbor = graph.edges.some(e =>
+            (e.from === lastNode && e.to === nodeId) ||
+            (e.to === lastNode && e.from === nodeId)
+        );
+
+        if (gameStatus === "playing" && isNeighbor && !playerPath.includes(nodeId)) {
+            return "fill-amber-100 hover:fill-amber-200 cursor-pointer";
+        }
+
+        if (!currentStep) return "fill-gray-50";
         if (nodeId === currentStep.currentNode) return "fill-amber-500";
         if (currentStep.visited.includes(nodeId)) return "fill-emerald-500";
         if (currentStep.priorityQueue.some((p) => p.node === nodeId)) return "fill-blue-500";
-        return "fill-gray-400";
+        return "fill-gray-50";
     };
 
     const getNodeStroke = (nodeId: string) => {
-        if (!currentStep) return "stroke-gray-500";
+        if (nodeId === startNode) return "stroke-emerald-600";
+        if (nodeId === endNode) return "stroke-rose-600";
+        if (playerPath.includes(nodeId)) return "stroke-blue-600";
+
+        if (!currentStep) return "stroke-gray-300";
         if (nodeId === currentStep.currentNode) return "stroke-amber-600";
         if (currentStep.visited.includes(nodeId)) return "stroke-emerald-600";
         if (currentStep.priorityQueue.some((p) => p.node === nodeId)) return "stroke-blue-600";
-        return "stroke-gray-500";
+        return "stroke-gray-300";
     };
 
     const getEdgeColor = (from: string, to: string) => {
+        // Player path edges
+        for (let i = 0; i < playerPath.length - 1; i++) {
+            if ((playerPath[i] === from && playerPath[i + 1] === to) ||
+                (playerPath[i] === to && playerPath[i + 1] === from)) {
+                return "stroke-blue-500";
+            }
+        }
+
         if (path.length > 1) {
             for (let i = 0; i < path.length - 1; i++) {
                 if (
@@ -482,14 +529,22 @@ function GraphVisualization({
                 }
             }
         }
-        if (!currentStep) return "stroke-black";
+        if (!currentStep) return "stroke-gray-200";
         if (currentStep.visited.includes(from) && currentStep.visited.includes(to)) {
-            return "stroke-gray-700";
+            return "stroke-gray-400";
         }
-        return "stroke-black";
+        return "stroke-gray-300";
     };
 
     const getEdgeWidth = (from: string, to: string) => {
+        // Player path width
+        for (let i = 0; i < playerPath.length - 1; i++) {
+            if ((playerPath[i] === from && playerPath[i + 1] === to) ||
+                (playerPath[i] === to && playerPath[i + 1] === from)) {
+                return 3;
+            }
+        }
+
         if (path.length > 1) {
             for (let i = 0; i < path.length - 1; i++) {
                 if (
@@ -500,7 +555,7 @@ function GraphVisualization({
                 }
             }
         }
-        return 1;
+        return 1.5;
     };
 
     // Muted state colors - subtle and professional
@@ -526,8 +581,12 @@ function GraphVisualization({
     const isMapLoading = level === 3 && mapPaths.length === 0;
 
     return (
-        <div className="relative w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-            <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-auto">
+        <div className="relative w-full h-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm min-h-[400px]">
+            <svg
+                viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+                className="w-full h-full"
+                preserveAspectRatio="xMidYMid meet"
+            >
                 {/* Grid Background */}
                 <defs>
                     <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
@@ -634,8 +693,6 @@ function GraphVisualization({
                 {(!isMapLoading || level !== 3) && graph.nodes.map((node) => {
                     const coords = level === 3 ? getNodeCoords(node.id) : { x: node.x, y: node.y };
                     const distance = currentStep?.distances[node.id];
-                    const isStart = levels[level - 1].start === node.id;
-                    const isEnd = levels[level - 1].end === node.id;
                     const nodeRadius = level === 3 ? 8 : 20;
                     const labelPos = level === 3 ? labelPositions[node.id] : null;
 
@@ -666,7 +723,8 @@ function GraphVisualization({
                                 cy={coords.y}
                                 r={nodeRadius}
                                 className={`${getNodeColor(node.id)} ${getNodeStroke(node.id)} transition-all duration-300`}
-                                strokeWidth={isStart || isEnd ? 2 : 1.5}
+                                strokeWidth={node.id === startNode || node.id === endNode ? 3 : 2}
+                                onClick={() => onNodeClick?.(node.id)}
                             />
                             {/* Distance label inside node for Level 3 */}
                             {level === 3 && currentStep && (
@@ -715,15 +773,15 @@ function GraphVisualization({
                                         {node.name}
                                     </text>
                                     {/* Start/End badge */}
-                                    {(isStart || isEnd) && (
+                                    {(node.id === startNode || node.id === endNode) && (
                                         <text
                                             x={labelPos.anchor === 'end' ? coords.x + labelPos.labelX - 55 : coords.x + labelPos.labelX + 55}
                                             y={coords.y + labelPos.labelY + 3}
                                             textAnchor={labelPos.anchor === 'end' ? 'start' : 'end'}
-                                            className={isStart ? 'fill-emerald-600' : 'fill-rose-600'}
+                                            className={node.id === startNode ? 'fill-emerald-600' : 'fill-rose-600'}
                                             style={{ fontSize: '7px', fontWeight: 'bold' }}
                                         >
-                                            {isStart ? '●' : '◆'}
+                                            {node.id === startNode ? '●' : '◆'}
                                         </text>
                                     )}
                                 </g>
@@ -739,8 +797,8 @@ function GraphVisualization({
                                     {distance === Infinity ? "∞" : distance}
                                 </text>
                             )}
-                            {/* Start indicator for Level 1 & 2 */}
-                            {level !== 3 && isStart && (
+                            {/* Start indicator */}
+                            {node.id === startNode && (
                                 <g>
                                     <rect
                                         x={coords.x - 18}
@@ -748,21 +806,21 @@ function GraphVisualization({
                                         width={36}
                                         height={14}
                                         rx={3}
-                                        className="fill-emerald-100 stroke-emerald-300"
+                                        className="fill-emerald-500 stroke-emerald-600"
                                         strokeWidth={1}
                                     />
                                     <text
                                         x={coords.x}
                                         y={coords.y + nodeRadius + 13}
                                         textAnchor="middle"
-                                        className="fill-emerald-700 text-[9px] font-semibold"
+                                        className="fill-white text-[9px] font-bold"
                                     >
                                         START
                                     </text>
                                 </g>
                             )}
-                            {/* End indicator for Level 1 & 2 */}
-                            {level !== 3 && isEnd && (
+                            {/* End indicator */}
+                            {node.id === endNode && (
                                 <g>
                                     <rect
                                         x={coords.x - 14}
@@ -770,14 +828,14 @@ function GraphVisualization({
                                         width={28}
                                         height={14}
                                         rx={3}
-                                        className="fill-rose-100 stroke-rose-300"
+                                        className="fill-rose-500 stroke-rose-600"
                                         strokeWidth={1}
                                     />
                                     <text
                                         x={coords.x}
                                         y={coords.y + nodeRadius + 13}
                                         textAnchor="middle"
-                                        className="fill-rose-700 text-[9px] font-semibold"
+                                        className="fill-white text-[9px] font-bold"
                                     >
                                         END
                                     </text>
@@ -895,45 +953,80 @@ function DistanceTable({
 // Main Component
 export default function LearnPage() {
     const [currentLevel, setCurrentLevel] = useState(1);
-    const [gameState, setGameState] = useState<"intro" | "playing" | "complete">("intro");
+    const [gameState, setGameState] = useState<"intro" | "selecting_start" | "selecting_end" | "playing" | "complete">("intro");
     const [steps, setSteps] = useState<DijkstraStep[]>([]);
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
-    const [isAutoPlaying, setIsAutoPlaying] = useState(false);
-    const [autoPlaySpeed, setAutoPlaySpeed] = useState(1500);
     const [showHint, setShowHint] = useState(false);
+
+    // Game specific state
+    const [startNode, setStartNode] = useState<string | null>(null);
+    const [endNode, setEndNode] = useState<string | null>(null);
+    const [playerPath, setPlayerPath] = useState<string[]>([]);
+    const [playerDist, setPlayerDist] = useState(0);
+    const [instruction, setInstruction] = useState("");
 
     const level = levels[currentLevel - 1];
     const currentStep = steps[currentStepIndex] || null;
-    const path = currentStep ? getPath(currentStep.previous, level.end) : [];
+    const path = currentStep ? getPath(currentStep.previous, endNode || "") : [];
     const isLastStep = currentStepIndex === steps.length - 1;
 
-    const startLevel = useCallback(() => {
-        const dijkstraSteps = runDijkstra(level.graph, level.start, level.end);
-        setSteps(dijkstraSteps);
-        setCurrentStepIndex(0);
-        setGameState("playing");
-        setShowHint(false);
-    }, [level]);
+    const startSetup = useCallback(() => {
+        setGameState("selecting_start");
+        setInstruction("Choose your starting node");
+        setStartNode(null);
+        setEndNode(null);
+        setPlayerPath([]);
+        setPlayerDist(0);
+    }, []);
 
-    const nextStep = useCallback(() => {
-        if (currentStepIndex < steps.length - 1) {
-            setCurrentStepIndex((prev) => prev + 1);
-        } else {
-            setGameState("complete");
-            setIsAutoPlaying(false);
-        }
-    }, [currentStepIndex, steps.length]);
+    const handleNodeClick = useCallback((nodeId: string) => {
+        if (gameState === "selecting_start") {
+            setStartNode(nodeId);
+            setGameState("selecting_end");
+            setInstruction("Now, choose your destination node");
+        } else if (gameState === "selecting_end") {
+            if (nodeId === startNode) return;
+            setEndNode(nodeId);
+            setGameState("playing");
+            setPlayerPath([startNode!]);
+            setInstruction("Navigate to the destination! Tap a connected node to move.");
 
-    const prevStep = useCallback(() => {
-        if (currentStepIndex > 0) {
-            setCurrentStepIndex((prev) => prev - 1);
+            // Calculate optimal path for later comparison
+            const dijkstraSteps = runDijkstra(level.graph, startNode!, nodeId);
+            setSteps(dijkstraSteps);
+            setCurrentStepIndex(dijkstraSteps.length - 1);
+        } else if (gameState === "playing") {
+            const lastNode = playerPath[playerPath.length - 1];
+            if (nodeId === lastNode) return;
+            if (playerPath.includes(nodeId)) return; // Prevent cycles for simplicity in this game
+
+            const edge = level.graph.edges.find(e =>
+                (e.from === lastNode && e.to === nodeId) ||
+                (e.to === lastNode && e.from === nodeId)
+            );
+
+            if (edge) {
+                const newPath = [...playerPath, nodeId];
+                setPlayerPath(newPath);
+                setPlayerDist(prev => prev + edge.weight);
+
+                if (nodeId === endNode) {
+                    setGameState("complete");
+                } else {
+                    const neighbors = level.graph.edges.filter(e => e.from === nodeId || e.to === nodeId);
+                    setInstruction(`Moved to ${level.graph.nodes.find(n => n.id === nodeId)?.name}. Choose the next node.`);
+                }
+            }
         }
-    }, [currentStepIndex]);
+    }, [gameState, startNode, endNode, playerPath, level]);
 
     const resetLevel = useCallback(() => {
-        setCurrentStepIndex(0);
-        setGameState("intro");
-        setIsAutoPlaying(false);
+        setGameState("selecting_start");
+        setInstruction("Choose your starting node");
+        setStartNode(null);
+        setEndNode(null);
+        setPlayerPath([]);
+        setPlayerDist(0);
     }, []);
 
     const nextLevel = useCallback(() => {
@@ -941,27 +1034,15 @@ export default function LearnPage() {
             setCurrentLevel((prev) => prev + 1);
             setGameState("intro");
             setSteps([]);
-            setCurrentStepIndex(0);
+            setStartNode(null);
+            setEndNode(null);
+            setPlayerPath([]);
+            setPlayerDist(0);
         }
     }, [currentLevel]);
 
-    useEffect(() => {
-        if (!isAutoPlaying) return;
-
-        const timer = setInterval(() => {
-            if (currentStepIndex < steps.length - 1) {
-                setCurrentStepIndex((prev) => prev + 1);
-            } else {
-                setIsAutoPlaying(false);
-                setGameState("complete");
-            }
-        }, autoPlaySpeed);
-
-        return () => clearInterval(timer);
-    }, [isAutoPlaying, currentStepIndex, steps.length, autoPlaySpeed]);
-
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
             {/* Header */}
             <header className="border-b border-gray-200 bg-white">
                 <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
@@ -999,7 +1080,7 @@ export default function LearnPage() {
                 </div>
             </header>
 
-            <main className="mx-auto max-w-7xl px-6 py-8 pb-24">
+            <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-4 overflow-hidden flex flex-col">
                 {/* Intro State */}
                 {gameState === "intro" && (
                     <div className="mx-auto max-w-2xl">
@@ -1027,7 +1108,7 @@ export default function LearnPage() {
                             </div>
 
                             <button
-                                onClick={startLevel}
+                                onClick={startSetup}
                                 className="w-full flex items-center justify-center gap-2 rounded-lg bg-gray-900 px-6 py-4 text-lg font-semibold text-white shadow-sm transition-all hover:bg-gray-800"
                             >
                                 {Icons.rocket}
@@ -1038,217 +1119,260 @@ export default function LearnPage() {
                 )}
 
                 {/* Playing State */}
-                {gameState === "playing" && currentStep && (
-                    <div className="grid gap-6 lg:grid-cols-3">
+                {(gameState === "playing" || gameState === "selecting_start" || gameState === "selecting_end") && (
+                    <div className="flex-1 min-h-0 grid gap-6 lg:grid-cols-3">
                         {/* Graph Visualization */}
-                        <div className="lg:col-span-2">
-                            <GraphVisualization
-                                graph={level.graph}
-                                currentStep={currentStep}
-                                path={isLastStep ? path : []}
-                                level={currentLevel}
-                            />
-
-                            {/* Controls */}
-                            <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={prevStep}
-                                        disabled={currentStepIndex === 0}
-                                        className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        Previous
-                                    </button>
-                                    <button
-                                        onClick={nextStep}
-                                        disabled={isLastStep}
-                                        className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        Next
-                                    </button>
-                                </div>
-
-                                <div className="flex items-center gap-3">
-                                    <button
-                                        onClick={() => setIsAutoPlaying(!isAutoPlaying)}
-                                        className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${isAutoPlaying
-                                            ? "bg-rose-100 text-rose-700 hover:bg-rose-200"
-                                            : "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                                            }`}
-                                    >
-                                        {isAutoPlaying ? Icons.pause : Icons.play}
-                                        {isAutoPlaying ? "Pause" : "Auto Play"}
-                                    </button>
-                                    <select
-                                        value={autoPlaySpeed}
-                                        onChange={(e) => setAutoPlaySpeed(Number(e.target.value))}
-                                        className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700"
-                                    >
-                                        <option value={2500}>Slow</option>
-                                        <option value={1500}>Normal</option>
-                                        <option value={800}>Fast</option>
-                                    </select>
-                                </div>
-
-                                <div className="text-sm text-gray-500 font-medium">
-                                    Step {currentStepIndex + 1} / {steps.length}
-                                </div>
+                        <div className="lg:col-span-2 relative flex flex-col min-h-0">
+                            <div className="flex-1 min-h-0 relative">
+                                <GraphVisualization
+                                    graph={level.graph}
+                                    currentStep={null}
+                                    path={[]}
+                                    level={currentLevel}
+                                    playerPath={playerPath}
+                                    onNodeClick={handleNodeClick}
+                                    gameStatus={gameState}
+                                    startNode={startNode}
+                                    endNode={endNode}
+                                />
                             </div>
 
-                            {/* Legend */}
-                            <div className="mt-4 flex flex-wrap items-center gap-6 text-sm text-gray-600">
+                            {/* Game Stats */}
+                            <div className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                                <div className="flex items-center gap-6">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Total Distance</span>
+                                        <span className="text-2xl font-black text-gray-900">{playerDist}</span>
+                                    </div>
+                                    <div className="h-8 w-px bg-gray-200"></div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Current Node</span>
+                                        <span className="text-sm font-bold text-gray-700">
+                                            {playerPath.length > 0
+                                                ? level.graph.nodes.find(n => n.id === playerPath[playerPath.length - 1])?.name
+                                                : "None"}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={resetLevel}
+                                    className="flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 transition-all"
+                                >
+                                    {Icons.refresh}
+                                    Reset
+                                </button>
+                            </div>
+
+                            <div className="mt-4 flex flex-wrap items-center gap-6 text-sm text-gray-600 bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
                                 <div className="flex items-center gap-2">
-                                    <div className="h-4 w-4 rounded-full bg-amber-500"></div>
-                                    <span>Current Node</span>
+                                    <div className="h-4 w-4 rounded-full bg-emerald-500 shadow-sm shadow-emerald-200"></div>
+                                    <span className="font-bold text-[10px] uppercase">Start</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <div className="h-4 w-4 rounded-full bg-emerald-500"></div>
-                                    <span>Visited</span>
+                                    <div className="h-4 w-4 rounded-full bg-rose-500 shadow-sm shadow-rose-200"></div>
+                                    <span className="font-bold text-[10px] uppercase">End</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <div className="h-4 w-4 rounded-full bg-blue-500"></div>
-                                    <span>In Queue</span>
+                                    <div className="h-4 w-4 rounded-full bg-blue-500 shadow-sm shadow-blue-200"></div>
+                                    <span className="font-bold text-[10px] uppercase">Path</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <div className="h-4 w-4 rounded-full bg-gray-400"></div>
-                                    <span>Unvisited</span>
+                                    <div className="h-4 w-4 rounded-full bg-amber-100 border border-amber-300"></div>
+                                    <span className="font-bold text-[10px] uppercase">Valid Moves</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Side Panel */}
-                        <div className="space-y-4">
-                            {/* Current Step Explanation */}
-                            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-                                <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-700">
-                                    <span className="text-gray-500">{Icons.lightbulb}</span>
-                                    Current Step
+                        <div className="overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+                            {/* Instruction Component */}
+                            <div className="bg-gradient-to-br from-indigo-600 to-purple-700 text-white p-5 rounded-2xl shadow-lg border border-white/10 animate-in fade-in slide-in-from-right-4 duration-500 relative overflow-hidden">
+                                <div className="absolute -right-4 -top-4 h-24 w-24 bg-white/10 rounded-full blur-2xl"></div>
+                                <div className="flex items-center gap-3 mb-2 relative z-10">
+                                    <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center">
+                                        {Icons.lightbulb}
+                                    </div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Mission Guidance</span>
+                                </div>
+                                <p className="text-sm font-bold leading-relaxed relative z-10">
+                                    {instruction}
+                                </p>
+                            </div>
+                            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                                <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-gray-900">
+                                    {Icons.route}
+                                    Your Path
                                 </h3>
-                                <div className="whitespace-pre-wrap rounded-lg bg-gray-50 p-3 text-sm text-gray-700 font-mono border border-gray-100">
-                                    {currentStep.explanation}
+                                <div className="space-y-3">
+                                    {playerPath.length === 0 ? (
+                                        <p className="text-sm text-gray-400 italic">No nodes selected yet...</p>
+                                    ) : (
+                                        playerPath.map((nodeId, idx) => {
+                                            const node = level.graph.nodes.find(n => n.id === nodeId);
+                                            return (
+                                                <div key={nodeId} className="flex items-center gap-3">
+                                                    <div className="h-6 w-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-bold">
+                                                        {idx + 1}
+                                                    </div>
+                                                    <span className="text-sm font-semibold text-gray-700">{node?.name}</span>
+                                                </div>
+                                            );
+                                        })
+                                    )}
                                 </div>
                             </div>
 
-                            <PriorityQueueDisplay queue={currentStep.priorityQueue} graph={level.graph} />
-                            <DistanceTable
-                                distances={currentStep.distances}
-                                visited={currentStep.visited}
-                                previous={currentStep.previous}
-                                graph={level.graph}
-                            />
-
-                            <button
-                                onClick={() => setShowHint(!showHint)}
-                                className="w-full flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-50"
-                            >
-                                {showHint ? Icons.eyeOff : Icons.eye}
-                                {showHint ? "Hide Hint" : "Show Hint"}
-                            </button>
-                            {showHint && (
-                                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                            <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+                                <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-amber-900">
+                                    {Icons.lightbulb}
+                                    Pro Tip
+                                </h3>
+                                <p className="text-sm text-amber-800 leading-relaxed font-medium">
                                     {level.hint}
-                                </div>
-                            )}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 )}
 
                 {/* Complete State */}
                 {gameState === "complete" && currentStep && (
-                    <div className="mx-auto max-w-4xl">
-                        <div className="mb-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-8 text-center">
-                            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                                {Icons.trophy}
-                            </div>
-                            <h3 className="text-3xl font-bold text-gray-900">Level {currentLevel} Complete</h3>
-                            <p className="mt-2 text-lg text-gray-600">
-                                Shortest path found with distance:{" "}
-                                <span className="font-bold text-emerald-600">{currentStep.distances[level.end]}</span>
-                            </p>
-                        </div>
+                    <div className="flex-1 overflow-y-auto pr-2 animate-in fade-in zoom-in duration-500 flex flex-col gap-6 pb-28">
+                        {(() => {
+                            const optimalDist = currentStep.distances[endNode!];
+                            const ratio = playerDist / optimalDist;
+                            let colorClass = "emerald";
+                            let badgeText = "God Tier! Absolute Perfection.";
+                            let desc = "You found the absolute shortest path possible. Your efficiency is unmatched!";
 
-                        {/* Path Visualization */}
-                        <div className="mb-8 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                            <h4 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
-                                <span className="text-gray-500">{Icons.route}</span>
-                                Optimal Path
-                            </h4>
-                            <div className="flex flex-wrap items-center justify-center gap-2">
-                                {path.map((nodeId, idx) => {
-                                    const node = level.graph.nodes.find((n) => n.id === nodeId);
-                                    const edge = idx < path.length - 1
-                                        ? level.graph.edges.find(
-                                            (e) =>
-                                                (e.from === path[idx] && e.to === path[idx + 1]) ||
-                                                (e.to === path[idx] && e.from === path[idx + 1])
-                                        )
-                                        : null;
-                                    return (
-                                        <div key={nodeId} className="flex items-center gap-2">
-                                            <div className="rounded-lg bg-emerald-500 px-4 py-2 font-medium text-white shadow-sm">
-                                                {node?.name}
-                                            </div>
-                                            {edge && (
-                                                <div className="flex items-center gap-1 text-gray-400">
-                                                    <span className="text-xs font-medium">{edge.weight}</span>
-                                                    {Icons.arrowRight}
-                                                </div>
-                                            )}
+                            if (ratio === 1) {
+                                // Default
+                            } else if (ratio <= 1.1) {
+                                colorClass = "green";
+                                badgeText = "Excellent Performance!";
+                                desc = "You were incredibly close to the optimal path. A few more tries and you'll hit perfection.";
+                            } else if (ratio <= 1.3) {
+                                colorClass = "amber";
+                                badgeText = "Good Effort!";
+                                desc = "A decent path, but there were slightly more efficient turns you could have taken.";
+                            } else {
+                                colorClass = "rose";
+                                badgeText = "Keep Practicing!";
+                                desc = "You reached the destination, but there's a much shorter route waiting to be discovered.";
+                            }
+
+                            const BgColors = {
+                                emerald: "bg-emerald-50 border-emerald-200",
+                                green: "bg-green-50 border-green-200",
+                                amber: "bg-amber-50 border-amber-200",
+                                rose: "bg-rose-50 border-rose-200"
+                            };
+
+                            const TextColors = {
+                                emerald: "text-emerald-800",
+                                green: "text-green-800",
+                                amber: "text-amber-800",
+                                rose: "text-rose-800"
+                            };
+
+                            const BadgeColors = {
+                                emerald: "bg-emerald-500",
+                                green: "bg-green-500",
+                                amber: "bg-amber-500",
+                                rose: "bg-rose-500"
+                            };
+
+                            return (
+                                <div className={`rounded-3xl border ${BgColors[colorClass as keyof typeof BgColors]} p-8 text-center shadow-lg`}>
+                                    <div className={`mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full ${BadgeColors[colorClass as keyof typeof BadgeColors]} text-white shadow-xl`}>
+                                        {Icons.trophy}
+                                    </div>
+                                    <h3 className="text-3xl font-black text-gray-900 mb-1">{badgeText}</h3>
+                                    <p className={`text-lg ${TextColors[colorClass as keyof typeof TextColors]} font-bold mb-6`}>
+                                        {desc}
+                                    </p>
+
+                                    <div className="flex justify-center gap-12 max-w-sm mx-auto bg-white/50 backdrop-blur-sm p-4 rounded-2xl border border-white shadow-inner">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] uppercase font-black text-gray-400 tracking-widest">You</span>
+                                            <span className="text-3xl font-black text-blue-600">{playerDist}</span>
                                         </div>
-                                    );
-                                })}
+                                        <div className="w-px bg-gray-200"></div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] uppercase font-black text-gray-400 tracking-widest">Goal</span>
+                                            <span className={`text-3xl font-black ${colorClass === 'emerald' ? 'text-emerald-600' : 'text-emerald-500'}`}>
+                                                {optimalDist}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        <div className="grid gap-6 md:grid-cols-2">
+                            {/* Your Path */}
+                            <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-6 flex flex-col">
+                                <h4 className="flex items-center gap-2 font-black text-blue-900 mb-4 text-sm">
+                                    {Icons.route} YOUR PATH
+                                </h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {playerPath.map((id, idx) => (
+                                        <div key={id} className="flex items-center gap-2">
+                                            <span className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm">
+                                                {level.graph.nodes.find(n => n.id === id)?.name}
+                                            </span>
+                                            {idx < playerPath.length - 1 && <span className="text-blue-300">{Icons.arrowRight}</span>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Optimal Path */}
+                            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-6 flex flex-col">
+                                <h4 className="flex items-center gap-2 font-black text-emerald-900 mb-4 text-sm">
+                                    {Icons.check} OPTIMAL PATH
+                                </h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {path.map((id, idx) => (
+                                        <div key={id} className="flex items-center gap-2">
+                                            <span className="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm">
+                                                {level.graph.nodes.find(n => n.id === id)?.name}
+                                            </span>
+                                            {idx < path.length - 1 && <span className="text-emerald-500/50 italic text-[10px]">next</span>}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
-                        {/* Final Graph */}
-                        <div className="mb-8">
+                        {/* Recap Graph */}
+                        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl min-h-[500px]">
                             <GraphVisualization
                                 graph={level.graph}
-                                currentStep={currentStep}
+                                currentStep={null}
                                 path={path}
                                 level={currentLevel}
+                                playerPath={playerPath}
+                                gameStatus="complete"
+                                startNode={startNode}
+                                endNode={endNode}
                             />
                         </div>
 
-                        {/* Key Learnings */}
-                        <div className="mb-8 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                            <h4 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
-                                <span className="text-gray-500">{Icons.book}</span>
-                                Key Takeaways
-                            </h4>
-                            <ul className="space-y-3 text-gray-700">
-                                <li className="flex items-start gap-3">
-                                    <span className="mt-0.5 text-emerald-500">{Icons.check}</span>
-                                    <span>Dijkstra always picks the unvisited node with the smallest known distance</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <span className="mt-0.5 text-emerald-500">{Icons.check}</span>
-                                    <span>The priority queue ensures we process nodes in optimal order</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <span className="mt-0.5 text-emerald-500">{Icons.check}</span>
-                                    <span>Once a node is visited, its shortest distance is finalized</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <span className="mt-0.5 text-emerald-500">{Icons.check}</span>
-                                    <span>Time complexity: O((V + E) log V) with a min-heap</span>
-                                </li>
-                            </ul>
-                        </div>
-
                         {/* Action Buttons */}
-                        <div className="flex flex-wrap justify-center gap-4">
+                        <div className="flex flex-wrap justify-center gap-4 py-6">
                             <button
                                 onClick={resetLevel}
-                                className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-6 py-3 font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                                className="flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-8 py-4 font-black text-gray-700 transition-all hover:bg-gray-50 active:scale-95 shadow-sm"
                             >
                                 {Icons.refresh}
-                                Replay Level
+                                Play Again
                             </button>
                             {currentLevel < 3 ? (
                                 <button
                                     onClick={nextLevel}
-                                    className="flex items-center gap-2 rounded-lg bg-gray-900 px-6 py-3 font-semibold text-white shadow-sm transition-all hover:bg-gray-800"
+                                    className="flex items-center gap-2 rounded-xl bg-gray-900 px-8 py-4 font-black text-white shadow-xl transition-all hover:bg-gray-800 hover:translate-y-[-2px] active:scale-95"
                                 >
                                     Next Level
                                     {Icons.arrowRight}
@@ -1256,9 +1380,9 @@ export default function LearnPage() {
                             ) : (
                                 <Link
                                     href="/dijkstra"
-                                    className="flex items-center gap-2 rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white shadow-sm transition-all hover:bg-emerald-500"
+                                    className="flex items-center gap-2 rounded-xl bg-blue-600 px-8 py-4 font-black text-white shadow-xl transition-all hover:bg-blue-500 hover:translate-y-[-2px] active:scale-95"
                                 >
-                                    Try Interactive Visualizer
+                                    Try Deep Sea Visualizer
                                     {Icons.arrowRight}
                                 </Link>
                             )}
@@ -1282,7 +1406,7 @@ export default function LearnPage() {
                                     ? (currentLevel / 3) * 100
                                     : ((currentLevel - 1) / 3) * 100 +
                                     (gameState === "playing"
-                                        ? (currentStepIndex / steps.length) * (100 / 3)
+                                        ? (playerPath.length / level.graph.nodes.length) * (100 / 3)
                                         : 0)
                                     }%`,
                             }}
