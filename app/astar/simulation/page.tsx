@@ -732,8 +732,8 @@ export default function AStarPage() {
                                         const child = nodes.find(n => n.id === childId);
                                         if (!child) return null;
                                         const isActive = astarState.activeEdge?.from === node.id && astarState.activeEdge?.to === childId;
-                                        const isPath = astarState.path.includes(node.id) && astarState.path.includes(childId) && 
-                                                    Math.abs(astarState.path.indexOf(node.id) - astarState.path.indexOf(childId)) === 1;
+                                        const isPath = astarState.path.includes(node.id) && astarState.path.includes(childId) &&
+                                            Math.abs(astarState.path.indexOf(node.id) - astarState.path.indexOf(childId)) === 1;
                                         const isVisited = astarState.closedSet.has(node.id) && astarState.closedSet.has(childId);
 
                                         return (
@@ -743,9 +743,9 @@ export default function AStarPage() {
                                                 x2={child.x} y2={child.y - 18}
                                                 className={
                                                     isPath ? "stroke-emerald-400" :
-                                                    isActive ? "stroke-rose-500" :
-                                                        isVisited ? "stroke-orange-500" :
-                                                            isDarkMode ? "stroke-slate-600" : "stroke-slate-400"
+                                                        isActive ? "stroke-rose-500" :
+                                                            isVisited ? "stroke-orange-500" :
+                                                                isDarkMode ? "stroke-slate-600" : "stroke-slate-400"
                                                 }
                                                 strokeWidth={isPath ? 3 : isActive ? 2.5 : 1.5}
                                                 strokeLinecap="round"
