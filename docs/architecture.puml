@@ -1,0 +1,83 @@
+@startuml Glassbox_Architecture
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam shadowing false
+skinparam roundcorner 10
+skinparam componentStyle uml2
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+
+title **Glassbox - Algorithm Visualization Platform**\n<size:12>Interactive Learning for Graph & Pathfinding Algorithms</size>
+
+' Color definitions
+skinparam package {51
+    BackgroundColor #F8FAFC
+    BorderColor #94A3B8
+    FontColor #1E293B
+}
+
+skinparam component {
+    BackgroundColor #EFF6FF
+    BorderColor #3B82F6
+    FontColor #1E40AF
+}
+
+skinparam rectangle {
+    BackgroundColor #FEF3C7
+    BorderColor #F59E0B
+}
+
+' ========================================
+' ARCHITECTURE DIAGRAM
+' ========================================
+
+package "Frontend Application" <<Next.js 16>> {
+    
+    package "Pages (App Router)" {
+        [Home Page\n"/" ] as Home #E0F2FE
+        
+        package "Algorithm Modules" {
+            [BFS\n"/bfs"] as BFS #DBEAFE
+            [DFS\n"/dfs"] as DFS #E9D5FF
+            [Dijkstra\n"/dijkstra/*"] as Dijkstra #D1FAE5
+            [A* Algorithm\n"/astar"] as AStar #FEF3C7
+        }
+    }
+    
+    package "Shared Components" {
+        [Graph Visualizer] as GraphViz
+        [Pseudocode Panel] as Pseudo
+        [Step Controller] as StepCtrl
+        [Animation Engine] as AnimEngine
+    }
+    
+    package "Core Libraries" {
+        [D3.js\nData Visualization] as D3
+        [Framer Motion\nAnimations] as Framer
+        [React State\nManagement] as State
+    }
+}
+
+package "Static Assets" {
+    [india.geojson] as GeoData
+    [Global Styles\nglobals.css] as Styles
+}
+
+' Relationships
+Home --> BFS : select
+Home --> DFS : select
+Home --> Dijkstra : select
+Home --> AStar : select
+
+BFS --> GraphViz : renders
+DFS --> GraphViz : renders
+Dijkstra --> GraphViz : renders
+AStar --> GraphViz : renders
+
+GraphViz --> D3 : uses
+AnimEngine --> Framer : uses
+StepCtrl --> State : manages
+
+Dijkstra ..> GeoData : uses (simulation)
+
+@enduml

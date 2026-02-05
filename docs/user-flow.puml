@@ -1,0 +1,98 @@
+@startuml Glassbox_User_Flow
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam shadowing false
+skinparam roundcorner 15
+skinparam defaultFontName Arial
+
+title **Glassbox - User Journey Flow**\n<size:11>Interactive Algorithm Learning Experience</size>
+
+skinparam activity {
+    BackgroundColor #EFF6FF
+    BorderColor #3B82F6
+    FontColor #1E40AF
+    DiamondBackgroundColor #FEF3C7
+    DiamondBorderColor #F59E0B
+}
+
+|#F0FDF4|User|
+start
+:Open Glassbox Platform;
+note right: Landing page\nshows 4 algorithms
+
+|#EFF6FF|Application|
+:Display Algorithm Selection;
+note left
+  • BFS (Breadth-First)
+  • DFS (Depth-First)
+  • Dijkstra's Algorithm
+  • A* Algorithm
+end note
+
+|User|
+:Select Algorithm;
+
+|Application|
+if (Dijkstra selected?) then (yes)
+    :Show Learning Options;
+    note right
+      1. Theory
+      2. Game (India Map)
+      3. Simulation
+    end note
+    
+    |User|
+    :Choose Learning Mode;
+    
+    |Application|
+    switch (mode?)
+    case (Theory)
+        :Display Theory Content;
+        :Show Pseudocode;
+        :Explain Complexity;
+    case (Game)
+        :Load India GeoJSON Map;
+        :Initialize City Graph;
+        :Enable Interactive Path Finding;
+    case (Simulation)
+        :Generate Random Graph;
+        :Initialize Algorithm State;
+    endswitch
+else (no)
+    :Initialize Default Visualization;
+    :Generate Tree/Graph Structure;
+endif
+
+|#FEF3C7|Visualization Engine|
+:Render Graph/Tree;
+:Display Pseudocode Panel;
+:Show Control Panel;
+
+|User|
+repeat
+    :Interact with Controls;
+    note right
+      • Play/Pause
+      • Step Forward/Back
+      • Adjust Speed
+      • Reset
+    end note
+    
+    |Visualization Engine|
+    :Execute Algorithm Step;
+    :Highlight Active Node/Edge;
+    :Update Pseudocode Line;
+    :Animate State Change;
+    
+    |User|
+    :Observe & Learn;
+    
+repeat while (Continue Learning?) is (yes)
+->no;
+
+|User|
+:Return to Home or Exit;
+
+stop
+
+@enduml

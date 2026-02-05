@@ -1,0 +1,97 @@
+@startuml Glassbox_Component_Diagram
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam linetype ortho
+
+title **Glassbox - Component Architecture**\n<size:11>Module Structure & Data Flow</size>
+
+' Styling
+skinparam rectangle {
+    roundCorner 15
+}
+
+skinparam component {
+    BackgroundColor<<page>> #DBEAFE
+    BorderColor<<page>> #3B82F6
+    BackgroundColor<<viz>> #D1FAE5
+    BorderColor<<viz>> #10B981
+    BackgroundColor<<state>> #FEE2E2
+    BorderColor<<state>> #EF4444
+    BackgroundColor<<lib>> #F3E8FF
+    BorderColor<<lib>> #A855F7
+}
+
+' Layout
+rectangle "Next.js App Router" as AppRouter #F8FAFC {
+    
+    rectangle "Route: /" {
+        component [page.tsx\n**Home**] <<page>> as HomePage
+    }
+    
+    rectangle "Route: /bfs" {
+        component [page.tsx\n**BFS Visualizer**] <<page>> as BFSPage
+    }
+    
+    rectangle "Route: /dfs" {
+        component [page.tsx\n**DFS Visualizer**] <<page>> as DFSPage
+    }
+    
+    rectangle "Route: /dijkstra" {
+        component [theory/page.tsx\n**Theory**] <<page>> as DijkstraTheory
+        component [game/page.tsx\n**India Map Game**] <<page>> as DijkstraGame
+        component [simulation/page.tsx\n**Simulation**] <<page>> as DijkstraSim
+    }
+    
+    rectangle "Route: /astar" {
+        component [page.tsx\n**A* Visualizer**] <<page>> as AStarPage
+    }
+}
+
+rectangle "Visualization Components" as VizLayer #F0FDF4 {
+    component [Graph Renderer\n(SVG/Canvas)] <<viz>> as GraphRender
+    component [Pseudocode\nHighlighter] <<viz>> as PseudoCode
+    component [Step-by-Step\nControls] <<viz>> as StepControls
+    component [Animation\nOrchestrator] <<viz>> as Animator
+}
+
+rectangle "State Management" as StateLayer #FEF2F2 {
+    component [Algorithm State\n(current, visited, queue/stack)] <<state>> as AlgoState
+    component [UI State\n(speed, isRunning, step)] <<state>> as UIState
+}
+
+rectangle "External Libraries" as LibLayer #FAF5FF {
+    component [D3.js] <<lib>> as D3
+    component [Framer Motion] <<lib>> as Framer
+    component [GeoJSON Data] <<lib>> as GeoJSON
+}
+
+' Connections from pages to visualization
+HomePage -[#3B82F6]-> BFSPage
+HomePage -[#3B82F6]-> DFSPage
+HomePage -[#3B82F6]-> DijkstraTheory
+HomePage -[#3B82F6]-> AStarPage
+
+DijkstraTheory -[#10B981,dashed]-> DijkstraGame
+DijkstraTheory -[#10B981,dashed]-> DijkstraSim
+
+' Visualization connections
+BFSPage --> GraphRender
+DFSPage --> GraphRender
+DijkstraSim --> GraphRender
+AStarPage --> GraphRender
+DijkstraGame --> GraphRender
+
+GraphRender --> D3
+Animator --> Framer
+DijkstraGame --> GeoJSON
+
+' State connections
+GraphRender -[#EF4444]-> AlgoState
+StepControls -[#EF4444]-> UIState
+Animator --> AlgoState
+PseudoCode --> AlgoState
+
+@enduml

@@ -1,0 +1,66 @@
+    @startuml Glassbox_Simple_Overview
+    !theme plain
+    skinparam backgroundColor #FEFEFE
+    skinparam shadowing false
+    skinparam roundcorner 20
+    skinparam defaultFontName Arial
+    skinparam defaultFontSize 13
+
+    title <size:18>**GLASSBOX**</size>\n<size:12>Algorithm Visualization & Learning Platform</size>
+
+    ' Clean modern styling
+    skinparam rectangle {
+        BackgroundColor<<home>> #3B82F6
+        FontColor<<home>> white
+        BackgroundColor<<algo>> #10B981
+        FontColor<<algo>> white
+        BackgroundColor<<feature>> #F59E0B
+        FontColor<<feature>> white
+        BackgroundColor<<tech>> #8B5CF6
+        FontColor<<tech>> white
+    }
+
+    ' Main structure
+    together {
+        rectangle "🏠 **HOME**\nAlgorithm Selection" <<home>> as Home
+    }
+
+    rectangle "📊 **ALGORITHMS**" <<algo>> as Algos {
+        rectangle "   BFS   \nLevel-order" as BFS #059669
+        rectangle "   DFS   \nDepth-first" as DFS #059669
+        rectangle " Dijkstra \nShortest Path" as DIJ #059669
+        rectangle "    A*    \nHeuristic" as ASTAR #059669
+    }
+
+    rectangle "✨ **FEATURES**" <<feature>> as Features {
+        rectangle "📖 Theory" as F1 #D97706
+        rectangle "🎮 Game" as F2 #D97706
+        rectangle "🔬 Simulation" as F3 #D97706
+    }
+
+    rectangle "⚙️ **TECH STACK**" <<tech>> as Tech {
+        rectangle "Next.js 16" as T1 #7C3AED
+        rectangle "D3.js" as T2 #7C3AED
+        rectangle "Framer" as T3 #7C3AED
+        rectangle "TailwindCSS" as T4 #7C3AED
+    }
+
+    ' Connections
+    Home -down-> Algos
+
+    BFS -[hidden]right-> DFS
+    DFS -[hidden]right-> DIJ
+    DIJ -[hidden]right-> ASTAR
+
+    DIJ -down-> Features : enhanced learning
+
+    Algos -down-> Tech : powered by
+
+    legend right
+    |<#3B82F6>    | Entry Point |
+    |<#10B981>    | Algorithm Module |
+    |<#F59E0B>    | Learning Feature |
+    |<#8B5CF6>    | Technology |
+    endlegend
+
+    @enduml

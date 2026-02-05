@@ -1,0 +1,97 @@
+@startuml Glassbox_Algorithm_Process
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam SequenceMessageAlignment center
+
+title **Glassbox - Algorithm Visualization Process**\n<size:11>Step-by-Step Execution Flow</size>
+
+skinparam sequence {
+    ArrowColor #3B82F6
+    LifeLineBorderColor #64748B
+    LifeLineBackgroundColor #F1F5F9
+    ParticipantBackgroundColor #EFF6FF
+    ParticipantBorderColor #3B82F6
+}
+
+actor User as U #FEF3C7
+participant "Control\nPanel" as CP #DBEAFE
+participant "State\nManager" as SM #FEE2E2
+participant "Algorithm\nEngine" as AE #D1FAE5
+participant "Graph\nRenderer" as GR #E9D5FF
+participant "Pseudocode\nPanel" as PP #FEF3C7
+
+== Initialization ==
+
+U -> CP : Click "Start" / Select Algorithm
+activate CP
+
+CP -> SM : Initialize State
+activate SM
+SM -> SM : Set initial distances
+SM -> SM : Create queue/stack
+SM --> CP : State Ready
+deactivate SM
+
+CP -> GR : Render Initial Graph
+activate GR
+GR --> CP : Graph Displayed
+deactivate GR
+
+CP -> PP : Highlight Line 1
+activate PP
+PP --> CP : Highlighted
+deactivate PP
+
+deactivate CP
+
+== Algorithm Execution Loop ==
+
+loop Each Step
+    U -> CP : Click "Next Step" / Auto-play
+    activate CP
+    
+    CP -> AE : Execute Next Step
+    activate AE
+    
+    AE -> SM : Get Current State
+    activate SM
+    SM --> AE : {current, visited, queue}
+    deactivate SM
+    
+    AE -> AE : Process Step\n(dequeue/pop, mark visited, etc.)
+    
+    AE -> SM : Update State
+    activate SM
+    SM --> AE : State Updated
+    deactivate SM
+    
+    AE --> CP : Step Result\n{node, message, stepType}
+    deactivate AE
+    
+    CP -> GR : Animate State Change
+    activate GR
+    GR -> GR : Highlight active node
+    GR -> GR : Show edge animation
+    GR -> GR : Update colors
+    GR --> CP : Animation Complete
+    deactivate GR
+    
+    CP -> PP : Update Highlight
+    activate PP
+    PP -> PP : Highlight relevant line
+    PP --> CP : Done
+    deactivate PP
+    
+    deactivate CP
+end
+
+== Completion ==
+
+AE --> CP : Algorithm Complete
+CP -> GR : Show Final Path
+CP -> PP : Display Completion
+CP --> U : Show Results\n(path length, visited nodes)
+
+@enduml
