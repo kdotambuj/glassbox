@@ -117,6 +117,17 @@ const dijkstraOptions = [
     ),
     gradient: "from-purple-500 to-pink-500",
   },
+  {
+    title: "Take Quiz",
+    description: "Test your understanding with questions",
+    href: "/dijkstra/quiz",
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+      </svg>
+    ),
+    gradient: "from-rose-500 to-pink-500",
+  },
 ];
 
 const containerVariants = {
@@ -450,7 +461,7 @@ export default function Home() {
                 </div>
 
                 {/* Option Cards */}
-                <div className="grid md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   {dijkstraOptions.map((option, index) => (
                     <Link key={option.title} href={option.href} onClick={() => setDijkstraModalOpen(false)}>
                       <motion.div
