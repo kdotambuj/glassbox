@@ -126,42 +126,61 @@ export default function Home() {
 
   const selectedAlgo = algorithms.find((a) => a.id === selectedAlgoId);
 
-  const getAlgoOptions = (id: string) => [
-    {
-      title: "Learn Theory",
-      description: "Understand the algorithm concepts and complexity",
-      href: `/${id}/theory`,
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-        </svg>
-      ),
-      gradient: "from-blue-500 to-indigo-500",
-    },
-    {
-      title: "Explore Game",
-      description: "Play an interactive game to learn by doing",
-      href: `/${id}/game`,
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
-      gradient: "from-emerald-500 to-teal-500",
-    },
-    {
-      title: "Detail Simulation",
-      description: "Watch step-by-step algorithm execution",
-      href: `/${id}/simulation`,
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-        </svg>
-      ),
-      gradient: "from-purple-500 to-pink-500",
-    },
-  ];
+  const getAlgoOptions = (id: string) => {
+    const baseOptions = [
+      {
+        title: "Learn Theory",
+        description: "Understand the algorithm concepts and complexity",
+        href: `/${id}/theory`,
+        icon: (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+        ),
+        gradient: "from-blue-500 to-indigo-500",
+      },
+      {
+        title: "Explore Game",
+        description: "Play an interactive game to learn by doing",
+        href: `/${id}/game`,
+        icon: (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        ),
+        gradient: "from-emerald-500 to-teal-500",
+      },
+      {
+        title: "Detail Simulation",
+        description: "Watch step-by-step algorithm execution",
+        href: `/${id}/simulation`,
+        icon: (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        ),
+        gradient: "from-purple-500 to-pink-500",
+      },
+    ];
+
+    // Add Quiz option for Dijkstra algorithm
+    if (id === "dijkstra") {
+      baseOptions.push({
+        title: "Take Quiz",
+        description: "Test your understanding with questions",
+        href: `/${id}/quiz`,
+        icon: (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+          </svg>
+        ),
+        gradient: "from-rose-500 to-pink-500",
+      });
+    }
+
+    return baseOptions;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-black to-slate-900 relative overflow-hidden">
@@ -385,7 +404,7 @@ export default function Home() {
                 </div>
 
                 {/* Option Cards */}
-                <div className="grid md:grid-cols-3 gap-4">
+                <div className={`grid ${selectedAlgoId === 'dijkstra' ? 'grid-cols-2' : 'md:grid-cols-3'} gap-4`}>
                   {getAlgoOptions(selectedAlgo.id).map((option, index) => (
                     <Link key={option.title} href={option.href} onClick={() => setSelectedAlgoId(null)}>
                       <motion.div
