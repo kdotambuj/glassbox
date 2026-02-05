@@ -259,7 +259,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            Algorithm Visualizer
+            Glassbox Odyssey
           </motion.h1>
 
           <motion.p
