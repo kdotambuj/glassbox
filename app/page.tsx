@@ -82,54 +82,6 @@ const algorithms = [
   },
 ];
 
-const dijkstraOptions = [
-  {
-    title: "Learn Theory",
-    description: "Understand the algorithm concepts and complexity",
-    href: "/dijkstra/theory",
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-      </svg>
-    ),
-    gradient: "from-blue-500 to-indigo-500",
-  },
-  {
-    title: "Explore Game",
-    description: "Play an interactive game to learn by doing",
-    href: "/dijkstra/game",
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-    gradient: "from-emerald-500 to-teal-500",
-  },
-  {
-    title: "Detail Simulation",
-    description: "Watch step-by-step algorithm execution",
-    href: "/dijkstra/simulation",
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-      </svg>
-    ),
-    gradient: "from-purple-500 to-pink-500",
-  },
-  {
-    title: "Take Quiz",
-    description: "Test your understanding with questions",
-    href: "/dijkstra/quiz",
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-      </svg>
-    ),
-    gradient: "from-rose-500 to-pink-500",
-  },
-];
-
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -170,7 +122,65 @@ const titleVariants = {
 
 export default function Home() {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const [dijkstraModalOpen, setDijkstraModalOpen] = useState(false);
+  const [selectedAlgoId, setSelectedAlgoId] = useState<string | null>(null);
+
+  const selectedAlgo = algorithms.find((a) => a.id === selectedAlgoId);
+
+  const getAlgoOptions = (id: string) => {
+    const baseOptions = [
+      {
+        title: "Learn Theory",
+        description: "Understand the algorithm concepts and complexity",
+        href: `/${id}/theory`,
+        icon: (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+        ),
+        gradient: "from-blue-500 to-indigo-500",
+      },
+      {
+        title: "Explore Game",
+        description: "Play an interactive game to learn by doing",
+        href: `/${id}/game`,
+        icon: (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        ),
+        gradient: "from-emerald-500 to-teal-500",
+      },
+      {
+        title: "Detail Simulation",
+        description: "Watch step-by-step algorithm execution",
+        href: `/${id}/simulation`,
+        icon: (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        ),
+        gradient: "from-purple-500 to-pink-500",
+      },
+    ];
+
+    // Add Quiz option for Dijkstra algorithm
+    if (id === "dijkstra") {
+      baseOptions.push({
+        title: "Take Quiz",
+        description: "Test your understanding with questions",
+        href: `/${id}/quiz`,
+        icon: (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+          </svg>
+        ),
+        gradient: "from-rose-500 to-pink-500",
+      });
+    }
+
+    return baseOptions;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-black to-slate-900 relative overflow-hidden">
@@ -270,129 +280,67 @@ export default function Home() {
           initial="hidden"
           animate="visible"
         >
-          {algorithms.map((algo) =>
-            algo.id === "dijkstra" ? (
-              <motion.div
-                key={algo.id}
-                variants={itemVariants}
-                onHoverStart={() => setHoveredId(algo.id)}
-                onHoverEnd={() => setHoveredId(null)}
-                whileHover={{ y: -8 }}
-                whileTap={{ scale: 0.98 }}
-                className="group relative h-full cursor-pointer"
-                onClick={() => setDijkstraModalOpen(true)}
-              >
-                <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-8 shadow-lg shadow-black/20 border border-white/10 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-black/30 hover:bg-white/10 h-full">
-                  <motion.div
-                    className={`absolute inset-0 ${algo.bgGlow} blur-2xl`}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{
-                      opacity: hoveredId === algo.id ? 0.5 : 0,
-                      scale: hoveredId === algo.id ? 1.2 : 0.8,
-                    }}
-                    transition={{ duration: 0.3 }}
-                  />
-
-                  <div className="relative z-10">
-                    <motion.div
-                      className={`inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br ${algo.color} text-white mb-5 shadow-lg`}
-                      whileHover={{ rotate: [0, -10, 10, 0] }}
-                      transition={{ duration: 0.5 }}
-                    >
-                      {algo.icon}
-                    </motion.div>
-
-                    <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-slate-100 transition-colors">
-                      {algo.title}
-                    </h3>
-                    <p className="text-slate-400 text-sm leading-relaxed mb-5">
-                      {algo.description}
-                    </p>
-
-                    <motion.div
-                      className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r ${algo.color} text-white font-medium text-sm shadow-md`}
-                      whileHover={{ scale: 1.05, x: 5 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <span>Explore {algo.shortTitle}</span>
-                      <motion.svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        animate={{ x: hoveredId === algo.id ? 4 : 0 }}
-                        transition={{ type: "spring", stiffness: 300 }}
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                      </motion.svg>
-                    </motion.div>
-                  </div>
-
-                  <div className={`absolute -top-10 -right-10 w-24 h-24 bg-gradient-to-br ${algo.color} rounded-full opacity-20 group-hover:opacity-30 transition-opacity duration-300`} />
-                </div>
-              </motion.div>
-            ) : (
-              <Link key={algo.id} href={algo.href}>
+          {algorithms.map((algo) => (
+            <motion.div
+              key={algo.id}
+              variants={itemVariants}
+              onHoverStart={() => setHoveredId(algo.id)}
+              onHoverEnd={() => setHoveredId(null)}
+              whileHover={{ y: -8 }}
+              whileTap={{ scale: 0.98 }}
+              className="group relative h-full cursor-pointer"
+              onClick={() => setSelectedAlgoId(algo.id)}
+            >
+              <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-8 shadow-lg shadow-black/20 border border-white/10 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-black/30 hover:bg-white/10 h-full">
                 <motion.div
-                  variants={itemVariants}
-                  onHoverStart={() => setHoveredId(algo.id)}
-                  onHoverEnd={() => setHoveredId(null)}
-                  whileHover={{ y: -8 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="group relative h-full"
-                >
-                  <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-8 shadow-lg shadow-black/20 border border-white/10 overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:shadow-black/30 hover:bg-white/10 h-full">
-                    <motion.div
-                      className={`absolute inset-0 ${algo.bgGlow} blur-2xl`}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{
-                        opacity: hoveredId === algo.id ? 0.5 : 0,
-                        scale: hoveredId === algo.id ? 1.2 : 0.8,
-                      }}
-                      transition={{ duration: 0.3 }}
-                    />
+                  className={`absolute inset-0 ${algo.bgGlow} blur-2xl`}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{
+                    opacity: hoveredId === algo.id ? 0.5 : 0,
+                    scale: hoveredId === algo.id ? 1.2 : 0.8,
+                  }}
+                  transition={{ duration: 0.3 }}
+                />
 
-                    <div className="relative z-10">
-                      <motion.div
-                        className={`inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br ${algo.color} text-white mb-5 shadow-lg`}
-                        whileHover={{ rotate: [0, -10, 10, 0] }}
-                        transition={{ duration: 0.5 }}
-                      >
-                        {algo.icon}
-                      </motion.div>
+                <div className="relative z-10">
+                  <motion.div
+                    className={`inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br ${algo.color} text-white mb-5 shadow-lg`}
+                    whileHover={{ rotate: [0, -10, 10, 0] }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    {algo.icon}
+                  </motion.div>
 
-                      <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-slate-100 transition-colors">
-                        {algo.title}
-                      </h3>
-                      <p className="text-slate-400 text-sm leading-relaxed mb-5">
-                        {algo.description}
-                      </p>
+                  <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-slate-100 transition-colors">
+                    {algo.title}
+                  </h3>
+                  <p className="text-slate-400 text-sm leading-relaxed mb-5">
+                    {algo.description}
+                  </p>
 
-                      <motion.div
-                        className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r ${algo.color} text-white font-medium text-sm shadow-md`}
-                        whileHover={{ scale: 1.05, x: 5 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <span>Visualize {algo.shortTitle}</span>
-                        <motion.svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          animate={{ x: hoveredId === algo.id ? 4 : 0 }}
-                          transition={{ type: "spring", stiffness: 300 }}
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </motion.svg>
-                      </motion.div>
-                    </div>
+                  <motion.div
+                    className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r ${algo.color} text-white font-medium text-sm shadow-md`}
+                    whileHover={{ scale: 1.05, x: 5 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <span>Explore {algo.shortTitle}</span>
+                    <motion.svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      animate={{ x: hoveredId === algo.id ? 4 : 0 }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </motion.svg>
+                  </motion.div>
+                </div>
 
-                    <div className={`absolute -top-10 -right-10 w-24 h-24 bg-gradient-to-br ${algo.color} rounded-full opacity-20 group-hover:opacity-30 transition-opacity duration-300`} />
-                  </div>
-                </motion.div>
-              </Link>
-            )
-          )}
+                <div className={`absolute -top-10 -right-10 w-24 h-24 bg-gradient-to-br ${algo.color} rounded-full opacity-20 group-hover:opacity-30 transition-opacity duration-300`} />
+              </div>
+            </motion.div>
+          ))}
         </motion.div>
 
         {/* Footer text */}
@@ -406,16 +354,16 @@ export default function Home() {
         </motion.p>
       </div>
 
-      {/* Dijkstra Modal */}
+      {/* Algorithm Modal */}
       <AnimatePresence>
-        {dijkstraModalOpen && (
+        {selectedAlgoId && selectedAlgo && (
           <>
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setDijkstraModalOpen(false)}
+              onClick={() => setSelectedAlgoId(null)}
               className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
             />
 
@@ -426,7 +374,7 @@ export default function Home() {
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
               className="fixed inset-0 z-50 flex items-center justify-center p-4"
-              onClick={() => setDijkstraModalOpen(false)}
+              onClick={() => setSelectedAlgoId(null)}
             >
               <div
                 onClick={(e) => e.stopPropagation()}
@@ -435,23 +383,18 @@ export default function Home() {
                 {/* Modal Header */}
                 <div className="flex items-center justify-between mb-8">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-400 flex items-center justify-center text-white shadow-lg">
-                      <svg viewBox="0 0 24 24" fill="none" className="w-7 h-7" stroke="currentColor" strokeWidth="1.5">
-                        <circle cx="4" cy="12" r="2" />
-                        <circle cx="12" cy="4" r="2" />
-                        <circle cx="20" cy="12" r="2" />
-                        <circle cx="12" cy="20" r="2" />
-                        <circle cx="12" cy="12" r="2" />
-                        <path d="M6 12h4M14 12h4M12 6v4M12 14v4" />
-                      </svg>
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${selectedAlgo.color} flex items-center justify-center text-white shadow-lg`}>
+                      <div className="w-8 h-8">
+                        {selectedAlgo.icon}
+                      </div>
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold text-white">Dijkstra&apos;s Algorithm</h2>
+                      <h2 className="text-2xl font-bold text-white">{selectedAlgo.title}</h2>
                       <p className="text-slate-400 text-sm">Choose how you want to explore</p>
                     </div>
                   </div>
                   <button
-                    onClick={() => setDijkstraModalOpen(false)}
+                    onClick={() => setSelectedAlgoId(null)}
                     className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -461,9 +404,9 @@ export default function Home() {
                 </div>
 
                 {/* Option Cards */}
-                <div className="grid grid-cols-2 gap-4">
-                  {dijkstraOptions.map((option, index) => (
-                    <Link key={option.title} href={option.href} onClick={() => setDijkstraModalOpen(false)}>
+                <div className={`grid ${selectedAlgoId === 'dijkstra' ? 'grid-cols-2' : 'md:grid-cols-3'} gap-4`}>
+                  {getAlgoOptions(selectedAlgo.id).map((option, index) => (
+                    <Link key={option.title} href={option.href} onClick={() => setSelectedAlgoId(null)}>
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
