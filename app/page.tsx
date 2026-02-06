@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import Link from "next/link";
+import AIChatbot from "./components/AIChatbot";
 
 const algorithms = [
   {
@@ -435,6 +436,9 @@ export default function Home() {
           </>
         )}
       </AnimatePresence>
+
+      {/* AI Chatbot */}
+      <AIChatbot />
     </div>
   );
 }
